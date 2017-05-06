@@ -1,4 +1,6 @@
-
+test:={asdf:{sdkfj:"dksl",tes:[323,432,"lskdj"]}}
+val:=Lib.obj.Array.toString(test)
+msgbox % val
 /*
 test_interface:=new Lib.Obj.tool.Interface()
 test_interface.add("dummy")
@@ -14,7 +16,6 @@ lib.tshoot(test_final,out,test_interface.isImplemented(Lib))
 Class Lib{
 	__New(Libraries,Check_Update:="",Exec_Script:="")
 	{
-		msgbox poop
 	}
 	Class Manager{
 
