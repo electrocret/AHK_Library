@@ -1,6 +1,3 @@
-test:={asdf:{sdkfj:"dksl",tes:[323,432,"lskdj"]}}
-val:=Lib.obj.Array.toString(test)
-msgbox % val
 /*
 test_interface:=new Lib.Obj.tool.Interface()
 test_interface.add("dummy")
@@ -21,8 +18,6 @@ Class Lib{
 
 		Documentation(Library:="")
 		{
-
-				Lib.tshoot(Lib.Obj.Class.Base(this),Lib.Obj.Class.Base_Root(this).__Class)
 				
 		}
 		Update(Library:="")

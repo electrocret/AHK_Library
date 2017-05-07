@@ -14,7 +14,7 @@ Class Array{
 			if(isarr == 1)	
 				assoc_output.=key ":" val,	arr_output.=val
 			else
-				assoc_output.=", " key ":" val,	arr_output.=" ," val
+				assoc_output.=", " key ":" val,	arr_output.=", " val
 			if(isarr)	{
 				if(key == isarr)
 					isarr++
@@ -47,34 +47,28 @@ Class Array{
 				return 1
 		return 0
 	}
-	containsValue(arr,val)	{
+	hasValue(arr,val)	{
 		For key, value in arr
 			if(value == val)
 				return key
 		return ""
 	}
-	containsKey(arr,kv)	{
-		For key, value in arr
-			if(key == kv)
-				return 1
-		return 0
-	}
-	contains(arr,val)	{
-		For key, value in arr
-			if(key == val or value == val)
-				return 1
-		return 0
-	}
-	Insert_Value(arr,value,overwrite:=0,preserve_subArray:=0)
-	{
+	/*
+		Overwrite:
+			0 - does not overwrite values in Arr or its subarrays.
+			1 - combines subarrays and overwrites values
+			2 - overwrites subarrays
 	
-	
+	*/
+	combine(Arr,InsArr,overwrite:=1)	{
+		for key,value in InsArr
+		{
+			if(Arr[key] == "" or  (overwrite == 1 and !isobject(Arr[key])) or overwrite ==2)
+				Arr[key]:=value
+			else if(isobject(Arr[key]) and isobject(value))
+				Arr[key]:=this.combine(Arr[key],value,overwrite)
+		}
+		return Arr
 	}
-	Get_Value(arr,keys)
-	{
 	
-	
-	}
-
-
 }

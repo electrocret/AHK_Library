@@ -1,13 +1,8 @@
-;
-; AutoHotkey Version: 1.x
-; Language:       English
-; Platform:       Win9x/NT
-; Author:         A.N.Other <myemail@nowhere.com>
-;
-; Script Function:
-;	Template script (you can customize this template by editing "ShellNew\Template.ahk" in your Windows folder)
-;
+test:={collision_array:{collision:"test",tval:"test"},collision:"test",tval:"test"}
+test2:={collision_array:{collision:"test2",t2val:"test2"},collision:"test2",t2val:"test2"}
 
-#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
-SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
-SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+;Example of toString
+msgbox % Lib.obj.Array.toString(test)
+
+;Example of Combine
+Lib.tshoot("Overwrite0= " Lib.obj.Array.toString(Lib.obj.Array.combine(test,test2,0)),"Overwrite1= " Lib.obj.Array.toString(Lib.obj.Array.combine(test,test2,1)),"Overwrite2= " Lib.obj.Array.toString(Lib.obj.Array.combine(test,test2,2)))
