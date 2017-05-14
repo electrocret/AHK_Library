@@ -40,6 +40,16 @@
 		Base_isRoot(obj){
 			return this.Tree_Name(obj) == this.Tree_Name(this.Base_Root(obj))
 		}
+		Base_Lineage(Obj){
+			Output:=Array()
+			Obj:=this.Global(Obj)
+			Output.push(Obj)
+			while(!this.Base_isRoot(Obj))	{
+				Obj:=this.Base(Obj)
+				Output.push(Obj)
+			}
+			return Output
+		}
 		/*
 			Method - Name(obj)
 			Description - gets Object's Class name
@@ -51,9 +61,9 @@
 			obj.push("")
 			obj:=this.Tree_Name(obj*)
 			obj.pop()
-			loop % obj.MaxIndex()
+			loop % obj.Length()
 				obj[A_Index]:=substr(obj[A_Index],instr(obj[A_Index],".",,-1)+1)
-			return obj.MaxIndex() == 1? obj[1]:obj
+			return obj.Length() == 1? obj[1]:obj
 		}
 		/*
 			Method - Tree_Name(obj)
@@ -63,9 +73,9 @@
 			obj - Object to get the Tree Name of
 		*/
 		Tree_Name(obj*) {
-			Loop % obj.MaxIndex()
+			Loop % obj.Length()
 				obj[A_Index]:=!isobject(obj[A_Index])?obj[A_Index]:isfunc(obj[A_Index].__ID)?obj[A_Index].__ID(-2):obj[A_Index].__Class
-			return obj.MaxIndex() == 1? obj[1]:obj
+			return obj.Length() == 1? obj[1]:obj
 		}
 		/*
 			Method - Tree_VName(obj)
@@ -78,9 +88,9 @@
 			obj.push("")
 			obj:=this.Tree_Name(obj*)
 			obj.pop()
-			Loop % obj.MaxIndex()
+			Loop % obj.Length()
 				obj[A_Index]:=StrReplace(obj[A_Index],".","#")
-			return obj.MaxIndex() == 1? obj[1]:obj
+			return obj.Length() == 1? obj[1]:obj
 		}
 		/*
 			Method - Tree_Parent(obj)
@@ -92,11 +102,11 @@
 		Tree_Parent(obj*)	{
 			obj.push("")
 			obj:=this.Tree_Name(obj*)
-			Loop % obj.MaxIndex()
+			Loop % obj.Length()
 				obj[A_Index]:=substr(obj[A_Index],1,instr(obj[A_Index],".",,-1) - 1)
 			obj:=this.Global(obj*)
 			obj.pop()
-			return obj.MaxIndex() == 1? obj[1]:obj
+			return obj.Length() == 1? obj[1]:obj
 		}
 		/*
 			Method - Tree_Root(obj)
@@ -108,14 +118,14 @@
 		Tree_Root(obj*) {
 			obj.push("")
 			obj:=this.Tree_Name(obj*)
-			Loop % obj.MaxIndex()
+			Loop % obj.Length()
 			{
 				delim:=instr(obj[A_Index],".")
 				obj[A_Index]:=substr(obj[A_Index],1,delim==0?strlen(obj[A_Index]):delim-1)
 			}
 			obj:=this.Global(obj*)
 			obj.pop()
-			return obj.MaxIndex() == 1? obj[1]:obj
+			return obj.Length() == 1? obj[1]:obj
 		}
 		/*
 			Method - Tree_Child_Get(obj,child:="")
@@ -135,7 +145,7 @@
 			Obj:=this.Global(obj*)
 			Name:=this.Tree_Name(Obj)
 			obj.pop()
-			Loop % Obj.MaxIndex()
+			Loop % Obj.Length()
 			{
 				tObj:=Obj[A_Index]
 				tName:=Name[A_Index]
@@ -146,7 +156,7 @@
 				}
 				Obj[A_Index]:=out
 			}
-			return obj.MaxIndex() == 1? obj[1]:obj
+			return obj.Length() == 1? obj[1]:obj
 		}
 		isGlobal(obj)	{
 			return obj == this.Global(obj)
@@ -165,7 +175,7 @@
 			vobj:=this.Tree_VName(obj*)
 			obj.pop()
 			output:=Array()
-			Loop % obj.MaxIndex()
+			Loop % obj.Length()
 			{
 				if(isobject(cache[vobj[A_Index]]))
 					output.push(cache[vobj[A_Index]])
@@ -182,7 +192,7 @@
 					output.push(oobj)
 				}
 			}
-			return output.MaxIndex() == 1? output[1]:output
+			return output.Length() == 1? output[1]:output
 		}
 		/*
 			Class - Interface

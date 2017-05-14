@@ -107,7 +107,7 @@ Class Hash extends Lib.Obj.Meta.Call {
 					this.kNum:=3
 				}
 				else	{ ;Keys were in input so they are formatted for Hash function
-					loop, % keys.MaxIndex()
+					loop, % keys.Length()
 					{
 						key:=keys[A_Index]
 						if key is not number
@@ -143,7 +143,7 @@ Class Hash extends Lib.Obj.Meta.Call {
 				this["__#key"]:=HKey
 				Keys:=temp_table.Keys()
 				hKeys:=temp_table.Keys(0)
-				Loop % Keys.MaxIndex()
+				Loop % Keys.Length()
 					this.put(Keys[A_Index],temp_table.get(hKeys[A_Index]))
 			}
 			else
@@ -161,7 +161,7 @@ Class Hash extends Lib.Obj.Meta.Call {
 		*/
 		Put(Key_Vals*)	{
 			Output:=new this(this["__#store_key"],this["__#key"])
-			loop, % Key_Vals.MaxIndex()
+			loop, % Key_Vals.Length()
 				if(mod(A_Index,2) == 1)
 					key:=this.Table_Key(Key_Vals[A_Index],0),this["_" key]:=!this["__#store_key"]?"":Key_Vals[A_Index] == key?this["_" key]:Key_Vals[A_Index]
 				else
@@ -187,7 +187,7 @@ Class Hash extends Lib.Obj.Meta.Call {
 					hash_insert:=1
 					Keys:=Hashtable_or_Obj.Keys()
 					hKeys:=Hashtable_or_Obj.Keys(0)
-					Loop % Keys.MaxIndex()
+					Loop % Keys.Length()
 						this.put(Keys[A_Index],Hashtable_or_Obj.get(hKeys[A_Index]))
 				}
 			}
@@ -207,7 +207,7 @@ Class Hash extends Lib.Obj.Meta.Call {
 			if(Keys.length() <= 1)
 				return this.Table_Key(Keys[1],1)
 			Output:=Array()
-			Loop % Keys.MaxIndex()
+			Loop % Keys.Length()
 				Output.push(this.Table_Key(Keys[A_Index],1))
 			return Output
 		}
@@ -220,7 +220,7 @@ Class Hash extends Lib.Obj.Meta.Call {
 		*/
 		Remove(Keys*)	{
 			Output:=new this(this["__#store_key"],this["__#key"])
-			Loop, % Keys.MaxIndex()
+			Loop, % Keys.Length()
 				key:=this.Table_Key(Keys[A_Index],0),Output[key]:=this[key],Output["_" key]:=this["_" key],this[key]:="",this["_" key]:=""
 			return Output
 		}

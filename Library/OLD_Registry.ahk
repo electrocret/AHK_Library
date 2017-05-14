@@ -164,10 +164,10 @@ Class Registry {
 		static Script_ID:=Lib.Hash(A_ScriptFullPath),Lib_ID:=Lib.Hash(A_LineFile)
 		output:=isobject(p_output)?p_output:{keys:Array(),properties:""}
 		tree_properties:=output.properties
-		Loop % r_keys.MaxIndex()
+		Loop % r_keys.Length()
 		{
 			subkey:=StrSplit(Format("{:L}",!isobject(r_keys[A_Index])?r_keys[A_Index]:Lib.Class.Tree(r_keys[A_Index]) != ""?Lib.Class.Tree(r_keys[A_Index]):Lib.Hash(r_keys[A_Index])),".",A_Space A_Tab)
-			loop % subkey.MaxIndex()
+			loop % subkey.Length()
 				Key:=this.Format_Key(subkey[A_Index]),	tree_properties.=Key.properties,		output.keys.push(key.key)
 		}
 		output.properties:=this.Format_Properties(tree_properties)

@@ -40,7 +40,7 @@
 					FileCreateDir, %FileDir%
 			}
 			FileDelete, %FileName%
-			Loop % File_Content.MaxIndex()
+			Loop % File_Content.Length()
 				FileAppend, % File_Content[A_Index] "`n", %FileName%
 			FileGetTime, modified , %FileName%,M
 			return modified

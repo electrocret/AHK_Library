@@ -32,16 +32,16 @@
 						return global_cls.Serializer.Dump(global_cls,serial_obj)
 					output:=Array()
 					if(isobject(global_cls.Serializer_Include)	{
-						Loop % global_cls.Serializer_Include.maxIndex()
+						Loop % global_cls.Serializer_Include.Length()
 							output[global_cls.Serializer_Include[A_Index]]:=serial_obj[global_cls.Serializer_Include[A_Index]]
 					}
 					else	{
 						for key,val in serial_obj
-							if(!Lib.obj.array.contains(global_cls.Serializer_Exclude,key))
+							if(!Lib.obj.array.hasValue(global_cls.Serializer_Exclude,key))
 								output[key]:=val
 					}
 					if(isobject(global_cls.Serializer_Params))
-						Loop % global_cls.Serializer_Params.maxIndex()
+						Loop % global_cls.Serializer_Params.Length()
 							output[global_cls.Serializer_Params[A_Index]]:=serial_obj[global_cls.Serializer_Params[A_Index]]
 					return output
 				}

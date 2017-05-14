@@ -7,9 +7,10 @@
 				1 -  Returns Object's ID (If one isn't assigned then blank is returned)
 		*/
 		Call(self, byref Obj,mode:=0)	{
-			static OID_Ref:="__ID" Lib.Hash(A_ScriptFullPath "_" A_ScriptHwnd , Lib.Hash.HashKey(64,8,1))
+			static GOID_Ref:="__ID" Lib.Hash(A_ScriptFullPath "_" A_ScriptHwnd , Lib.Hash.HashKey(64,8,1))
 			if(Lib.Obj.Class.Tree_Name(Lib.Obj.Class.Base_Root(Obj)) == "Lib.Obj.ID.Meta_ID") ;Checks if Object is a meta_ID object
 				return Obj.__ID(mode)	;Calls Meta_ID object
+			OID_Ref:=GOID_Ref Lib.obj.class.isGlobal(Obj)
 			if(!isobject(Obj[OID_Ref]) or Lib.Obj.Class.Tree_Name(Obj[OID_Ref]) != "Lib.Obj.ID.generic_ID") ;Checks if object does not have generic_ID 
 				Obj[OID_Ref]:=new Lib.Obj.ID.generic_ID()	;Gives it a generic_ID 
 			if(!isobject(Obj[OID_Ref]) or Lib.Obj.Class.Tree_Name(Obj[OID_Ref]) != "Lib.Obj.ID.generic_ID") ;Checks if it still doesn't have a generic_ID
@@ -24,6 +25,7 @@
 		}
 		
 		Class generic_ID extends Lib.obj.id.meta_ID {
+			static __Meta:=1
 		}
 		Class meta_ID{
 				/*
@@ -38,19 +40,19 @@
 						object - Returns whether set should be bypassed. assumes object is array of keys
 				*/
 				__ID(mode:=0) 	{
-					static ObjID_Enumerator:=2, block:=1,OID_Ref:="__ID" Lib.Hash(A_ScriptFullPath "_" A_ScriptHwnd , Lib.Hash.HashKey(64,8,1)),check_serializing:=0
+					static ObjID_Enumerator:=2, block:=1,GOID_Ref:="__ID" Lib.Hash(A_ScriptFullPath "_" A_ScriptHwnd , Lib.Hash.HashKey(64,8,1)),check_serializing:=0
 					if(!isobject(mode))	{
 						block:=0 ;Enables Bypass Block
 						if(mode == 0 or mode == 1)	{ ;Get ID
+							OID_Ref:=GOID_Ref Lib.obj.class.isGlobal(this)
 							ObjID:=this[OID_Ref].ID ;gets stored ObjID
-							if(ObjID == "" and mode ==0) ;Ensures Object has ID
-							{
+							if(ObjID == "" and mode ==0) { ;Ensures Object has ID
 								ObjID:=ObjID_Enumerator++ ;Assigns Object ID
-								this[OID_Ref]:=new Lib.Obj.Tool.Final({ID:ObjID})
+								this[OID_Ref]:=new Lib.Obj.Tool.Final({ID:ObjID,__Meta:1})
 							}
 						}
 						else if(mode >= -3 and mode <= -1)	
-							ObjID:=mode== -1 ?Lib.Obj.Array.regex_Filter(this,"^__ID"):mode ==-2?this.__Class:mode==-3?this.base:""
+							ObjID:=mode== -1 ?Lib.Obj.Array.Associative.regex_keyFilter(this,"^__ID"):mode ==-2?this.__Class:mode==-3?this.base:""
 						else if(mode == -10 or mode ==-9)	;Enables/DIsables Serializing Bypass
 							check_serializing:=mode == -10
 						block:=1 ;Disables Bypass block

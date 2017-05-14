@@ -55,7 +55,7 @@ Class Github extends Lib.Obj.Meta.Call{
 	}
 	Info(Keys*)	{
 		info:=this.call(this.github_API this.info_id)
-		Loop % Keys.MaxIndex()
+		Loop % Keys.Length()
 		{
 			if(subcall != "")	{
 				if(instr(subcall,"{"))

@@ -1,3 +1,4 @@
+Lib.tshoot(Lib.obj.array.islinear([1,2,3,4]))
 /*
 test_interface:=new Lib.Obj.tool.Interface()
 test_interface.add("dummy")
@@ -36,7 +37,7 @@ Class Lib{
 
 tshoot(variables*)	{	
 	output:=""
-	Loop % variables.MaxIndex()
+	Loop % variables.Length()
 		output.="Variable" A_Index " :" Lib.obj.Json.dump(variables[A_Index]) "`n"
 	msgbox % output
 }

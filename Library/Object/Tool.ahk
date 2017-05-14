@@ -20,7 +20,7 @@
 			__New(Existing_Array:="")		{
 				this.Modified(1) ;Records that Object has Modified
 				if(isobject(Existing_Array)) ;Checks if Array was inputted
-					Lib.Obj.Array.insert_value(this,Existing_Array) ;Inserts Values
+					Lib.Obj.Array.combine(this,Existing_Array) ;Inserts Values
 			}
 			Set(Keys*)	{
 				this.Modified(1) ;Records that Object Modified
