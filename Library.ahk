@@ -1,4 +1,4 @@
-Lib.tshoot(Lib.obj.array.islinear([1,2,3,4]))
+Lib.tshoot(Lib.obj.array.split(5,[0,1],[1,2,3,4,5,6,7]))
 /*
 test_interface:=new Lib.Obj.tool.Interface()
 test_interface.add("dummy")
