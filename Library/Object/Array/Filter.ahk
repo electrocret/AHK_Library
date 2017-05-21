@@ -159,7 +159,7 @@ Class Filter extends Lib.Obj.Array {
 
 
 	;Miscellaneous Filters
-	Class Keys extends Lib.Obj.Array.Filter.Template_Logic { ;Does Or on Key if Multiple Filters are provided
+	Class FKeys extends Lib.Obj.Array.Filter.Template_Logic { ;Does Or on Key if Multiple Filters are provided
 		Filter(F_Array) {
 			if(F_Array.Length() < 2) 
 				return 0
