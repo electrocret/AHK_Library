@@ -1,4 +1,4 @@
-Lib.tshoot(Lib.obj.array.split(5,[0,1],[1,2,3,4,5,6,7]))
+;Lib.tshoot(Lib.obj.array.split(5,[0,1],[1,2,3,4,5,6,7]))
 /*
 test_interface:=new Lib.Obj.tool.Interface()
 test_interface.add("dummy")
@@ -10,7 +10,6 @@ test_final:=Lib.obj.Json.load(Lib.obj.Json.Dump(test_interface))
 out:=test_final.isImplemented(Lib)
 lib.tshoot(test_final,out,test_interface.isImplemented(Lib))
 */
-
 Class Lib{
 	__New(Libraries,Check_Update:="",Exec_Script:="")
 	{
