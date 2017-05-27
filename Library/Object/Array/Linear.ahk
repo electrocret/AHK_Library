@@ -9,13 +9,21 @@ Class Linear extends Lib.obj.Array.Generic{
 				}
 				return this.Helper.Return_format(Arr)
 		}
+		join(delim:=",",Arr*) {
+			this.Helper.Default_Param(Arr,",",delim)
+			For i,sArr in Arr {
+				For si,Val in sArr
+					Out.=delim (isobject(Val)?Lib.Obj.Array.ToString(Val):Val)
+				Arr[i]:=SubStr(Out,StrLen(delim) + 1), Out:=""
+			}
+			return this.Helper.Return_format(Arr)
+		}
 		/*
 			trim_instruction:
 				1 - Remove at beginning of array
 				0 - remove value at end of array
 				an array of instructions can be input and they will be cycled through
 		*/
-		
 		Trim(trim_instruction,size,Arr*)	{ ;Needs updated so trim_instruction uses CSV
 			if(!isobject(trim_instruction))
 				trim_instruction:=[trim_instruction,trim_instruction]

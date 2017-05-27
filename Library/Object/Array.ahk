@@ -3,7 +3,7 @@ Class Array extends Lib.obj.meta.Call{
 	#Include %A_ScriptDir%\Library\Object\Array\Associative.ahk
 	#Include %A_ScriptDir%\Library\Object\Array\Generic.ahk
 	#Include %A_ScriptDir%\Library\Object\Array\Filter.ahk
-	Call(function,byref Parameters*)	{	;Needs rewritten so it takes advantage of Variatic
+	Call(function,byref Parameters*)	{	;Needs rewritten
 		if(Parameters.length() == 0)	;Checks if no parameters were entered
 			return this["Generic"][function]()
 		LastParam:=0

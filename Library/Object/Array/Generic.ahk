@@ -1,13 +1,33 @@
 Class Generic {
+	isKey(allow_arr_Key:=1,Keys*) {
+		this.Helper.Default_Param(Keys,1,allow_arr_Key)
+		if(allow_arr_Key)
+			Keys.push(""), Linear:=this.isLinear(Keys*), Keys.pop()
+		For i,Key in Keys {
+			if(Linear[i] and allow_arr_Key)	{
+				Keys[i]:=1
+				For a,sKey in Key
+					if(sKey == "" or RegExMatch(sKey, "([[:alnum:]]|#|\$|_|@)*(*PRUNE)\D") or StrLen(sKey) >= 253 or isObject(sKey))
+						Keys[i]:=0,break
+			}
+			else
+				Keys[i]:=!(Key == "" or RegExMatch(Key, "([[:alnum:]]|#|\$|_|@)*(*PRUNE)\D") or StrLen(Key) >= 253 or isObject(Key))
+		}
+		return this.Helper.Return_format(Keys)
+	}
 	isLinear(Arr*)	{
 		for i, sArr in Arr {
-			index:=1
-			For key, value in sArr	{
-				if(key != index)
-					index:=-1,break
-				index++
+			if(!isobject(sArr))
+				Arr[i]:=0
+			else	{
+				index:=1
+				For key, value in sArr	{
+					if(key != index)
+						index:=-1,break
+					index++
+				}
+				Arr[i]:=index != -1
 			}
-			Arr[i]:=index != -1
 		}
 		return this.Helper.Return_format(Arr)
 	}
@@ -80,14 +100,38 @@ Class Generic {
 		return this.Helper.Return_format(Arr)
 	}
 	hasKey(Key,Arr*) {
-		multiple:=instr(Key,",")
-		For i,sArr in Arr {
-			Loop, Parse, Key,CSV
-				if(sArr.hasKey(A_LoopField))
-					Arr[i]:=multiple?A_LoopField:1, break
-			if(isobject(Arr[i]))
+		if(!isobject(Key))	{ ;A Single Key or CSV List of keys is provided
+			multiple:=instr(Key,",")
+			For i,sArr in Arr {
 				Arr[i]:=multiple?"":0
+				Loop, Parse, Key,CSV
+					if(sArr.hasKey(A_LoopField))
+						Arr[i]:=multiple?A_LoopField:1, break
+			}
 		}
+		else if(this.isKey(Key)) { ;Key Array is provided
+			ArrKeys:=Array()
+			LastKey:=Array()
+			Arr.push("")
+			For i, K in Key {
+				Keys:=Array()
+				Loop % i
+					if(A_LoopField == i)
+						LastKey[i]:=Key[A_LoopField]
+					else
+						Keys.push(Key[A_LoopField])
+				ArrKeys[i]:=this.get(Keys,Arr*)
+			}
+			Arr.pop()
+			For i, sArr in Arr {
+				Arr[i]:=1
+				For ik,kArr in ArrKeys
+					if(!kArr[i].hasKey(Lastkey[ik]))
+						Arr[i]:=0,break
+			}
+		}
+		else
+			return
 		return this.Helper.Return_format(Arr)
 	}
 	Sort_Group(Group_Keys:=1,Sort_Keys:="",Skip_Meta:=1,Arr*)		{
@@ -102,7 +146,7 @@ Class Generic {
 				For key,group in sArr[Group_Key] {	;Builds Grouping Map
 					if(group == "" or (Skip_Meta and Lib.Obj.isMetaInfo(key,group)))
 						continue
-					if(isobject(group) or RegExMatch(group, "([[:alnum:]]|#|\$|_|@)*(*PRUNE)\D") or StrLen(group) >= 253)
+					if(!this.isKey(group))
 						group:=Lib.Hash(group)
 					if(!isobject(GMap[Group]))
 						Gmap[Group]:=Array()
@@ -115,7 +159,7 @@ Class Generic {
 			}
 			else { ;Sort_Keys is defined
 				Loop, parse, Sort_Keys, CSV
-					if(!(RegExMatch(A_LoopField, "([[:alnum:]]|#|\$|_|@)*(*PRUNE)\D") or StrLen(A_LoopField) >= 253))
+					if(this.isKey(A_LoopField))
 						if(sArr.hasKey(A_LoopField))
 							Arr[i][A_LoopField]:=this.Helper.Sort_Group_Keys(sArr[A_LoopField])
 			}
@@ -136,19 +180,21 @@ Class Generic {
 				Arr[i][Key]:=Value
 	}
 	Get(Key,Arr*){
-		if(isobject(Key)) 
-			for i,sArr in Arr
-				Arr[i]:=sArr[Key*]
-		else if(instr(Key,",")) 
-			for i,sArr in Arr	{
-				output:=Array()
-				Loop, Parse, Key,CSV
-					output[A_LoopField]:=sArr[A_LoopField]
-				Arr[i]:=Output
-			}
-		else 
-			for i,sArr in Arr
-				Arr[i]:=sArr[Key]
+		if(Key != "")		{
+			if(isobject(Key)) 
+				for i,sArr in Arr
+					Arr[i]:=sArr[Key*]
+			else if(instr(Key,",")) 
+				for i,sArr in Arr	{
+					output:=Array()
+					Loop, Parse, Key,CSV
+						output[A_LoopField]:=sArr[A_LoopField]
+					Arr[i]:=Output
+				}
+			else 
+				for i,sArr in Arr
+					Arr[i]:=sArr[Key]
+		}
 		return this.Helper.Return_format(Arr)
 	}
 	Class Helper {

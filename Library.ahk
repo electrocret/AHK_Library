@@ -34,11 +34,11 @@ Class Lib{
 	#Include %A_Scriptdir%\Library\String.ahk
 	
 
-tshoot(variables*)	{	
-	output:=""
-	Loop % variables.Length()
-		output.="Variable" A_Index " :" Lib.obj.Json.dump(variables[A_Index]) "`n"
-	msgbox % output
-}
+	tshoot(variables*)	{	
+		output:=""
+		Loop % variables.Length()
+			output.="Variable" A_Index " :" Lib.obj.Json.dump(variables[A_Index]) "`n"
+		msgbox % output
+	}
 
 }
