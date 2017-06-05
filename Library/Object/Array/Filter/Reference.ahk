@@ -1,20 +1,5 @@
 	;Reference Filters
-	Class Template_SubFilter extends Lib.Obj.Array.Filter.Template {
-		subFilter(byref F_Inst,Filter,Filter_ID,Eval:="",Extended_Output:=0)	{
-			FID:=this.Sub_ID ==""?Filter_ID: this.Sub_ID "#" Filter_ID ;Creates Filter ID
-			if(FID != Filter.Sub_ID) ;Checks if Filter ID is the same that's set to the FIlter
-				Filter.Sub_ID:=this.generic.isKey(FID)?FID:Lib.Hash(FID) ;Sets Filter ID to Filter. If Filter ID can't be a variable then take a hash
-			FEntry:={Filter:Filter,Eval:Eval==""?F_Inst.Eval:Eval,Filter_ID:Filter.Sub_ID}
-			F_Inst.SubF_Parent.InsertAt(1,FEntry) ;Adds Filter Entry to Sub_Parent
-			F_Inst.SubF_ID[Filter.Sub_ID]:=FEntry ;Adds Filter Entry to Sub_ID
-			if(Extended_Output and isfunc(Filter.Filter_ext))
-				FEntry.Output:=Filter.Filter_ext(F_Inst)
-			else
-				FEntry.Output:=Filter.Filter(F_Inst)
-			F_Inst.SubF_Parent.RemoveAt(1) ;Removes Filter Entry from Sub_Parent - Finished running child filters
-			return FEntry.Output
-		}
-	}
+
 	Class Nest extends Lib.Obj.Array.Filter.Template_SubFilter {
 		__New(SubFilter,Keys*)	{
 			if(this.isFilter(SubFilter))	{

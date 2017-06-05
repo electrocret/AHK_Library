@@ -135,7 +135,7 @@ Class Generic {
 		return this.Helper.Return_format(Arr)
 	}
 	Sort_Group(Group_Keys:=1,Sort_Keys:="",Skip_Meta:=1,Arr*)		{
-		this.Helper.Default_Param(Arr,1,Group_Keys,Skip_Meta,"",Sort_Keys)
+		this.Helper.Default_Param(Arr,1,Group_Keys,1,Skip_Meta,"",Sort_Keys)
 		tGroup_Keys:=Array()
 		Loop, parse, Group_Keys,CSV
 			tGroup_Keys.push(A_LoopField)
