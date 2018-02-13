@@ -1,4 +1,4 @@
-Class Asynchronous extends Lib.Obj.meta.Call_Functor{
+Class Asynchronous extends AHK.Lang.Class.Meta.Call_Functor{
 	Call(self:="",Task:="",Cancel:=0)
 	{
 		Static Scheduler_Init:=0,TaskList_Running:=0,Schedule:=Array(),Scheduled:=Array(),TaskList:=Array()
@@ -21,11 +21,11 @@ Class Asynchronous extends Lib.Obj.meta.Call_Functor{
 		
 		
 	}
-	Class Task extends Lib.obj.meta.Call_Construct{
+	Class Task extends AHK.Lang.Class.Meta.Call_Construct{
 		__New(byref Obj,Funct,Delay:=1,Repeat:=0)	{
 			if(isfunc(Obj[funct]))
 			{
-				this.ID:=Lib.obj.ID(Obj) "_" Funct
+				this.ID:=Ahk.obj.ID(Obj) "_" Funct
 				this.Obj:=Obj
 				this.Funct:=Funct
 				this.Repeat:=Repeat is digit?Repeat:0

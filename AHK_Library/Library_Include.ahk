@@ -1,0 +1,1 @@
+#Include %A_Scriptdir%\AHK_Library\AHK\AHK_Library.ahk

@@ -1,0 +1,53 @@
+<NotepadPlus>
+    <Project name="AHK_Library">
+        <Folder name="Examples">
+            <Folder name="Object">
+                <File name="Examples\Object\Array.ahk" />
+                <File name="Examples\Object\Class.ahk" />
+                <File name="Examples\Object\ID.ahk" />
+                <File name="Examples\Object\JSON.ahk" />
+                <File name="Examples\Object\Meta.ahk" />
+                <File name="Examples\Object\Tool.ahk" />
+            </Folder>
+            <File name="Examples\Hash.ahk" />
+            <File name="Examples\Registry.ahk" />
+            <File name="Examples\String.ahk" />
+        </Folder>
+        <Folder name="Library">
+            <Folder name="Object">
+                <Folder name="Array">
+                    <Folder name="Filter">
+                        <File name="Library\Object\Array\Filter\Comparison.ahk" />
+                        <File name="Library\Object\Array\Filter\Logic.ahk" />
+                        <File name="Library\Object\Array\Filter\Reference.ahk" />
+                    </Folder>
+                    <File name="Library\Object\Array\Associative.ahk" />
+                    <File name="Library\Object\Array\Filter.ahk" />
+                    <File name="Library\Object\Array\Generic.ahk" />
+                    <File name="Library\Object\Array\Linear.ahk" />
+                </Folder>
+                <File name="Library\Object\Array.ahk" />
+                <File name="Library\Object\Class.ahk" />
+                <File name="Library\Object\Default_Base.ahk" />
+                <File name="Library\Object\ID.ahk" />
+                <File name="Library\Object\JSON.ahk" />
+                <File name="Library\Object\KReference.ahk" />
+                <File name="Library\Object\Meta.ahk" />
+                <File name="Library\Object\Old_Array.ahk" />
+                <File name="Library\Object\Tool.ahk" />
+            </Folder>
+            <File name="Library\Asynchronous.ahk" />
+            <File name="Library\Default_Base.ahk" />
+            <File name="Library\GitHub.ahk" />
+            <File name="Library\Hash.ahk" />
+            <File name="Library\Helper.ahk" />
+            <File name="Library\Import.ahk" />
+            <File name="Library\Object.ahk" />
+            <File name="Library\OLD_Registry.ahk" />
+            <File name="Library\Registry.ahk" />
+            <File name="Library\Serial.ahk" />
+            <File name="Library\String.ahk" />
+        </Folder>
+        <File name="Library.ahk" />
+    </Project>
+</NotepadPlus>

@@ -9,12 +9,58 @@
 	Parameters :
 	Value - Value to get a hash of. If blank then Substitution table cache is cleared for specified Hashkey, or for all Hashkeys if no hash key is specified.
 	HKey - Hashkey object to use.
-
-	Note: Hash Functions are based off of: https://autohotkey.com/board/topic/14040-fast-64-and-128-bit-hash-functions/
+	
+	Credits: 
+		TEA Functions are based off of: https://autohotkey.com/board/topic/14040-fast-64-and-128-bit-hash-functions/ 
+		CRC32, MD5, and SHA1 Functions are by SKAN https://autohotkey.com/board/topic/59576-filecrc32-filesha1-filemd5-and-md5/
 */
-Class Hash extends Lib.Obj.Meta.Call {
+Class Hash extends AHK.Lang.Class.Meta.Call {
 		;#### Functions Related to finding Hash
-		static Default_HKey:=new this.Hashkey(64,8,0,12,34,56,78,90)	;Default Hashkey
+		Default_HKey:=new this.Hashkey(64,8,0,12,34,56,78,90) ;Default Hashkey
+		
+		Call(method,HKey:="",Values*)	{
+			static TEA_STbl:=Array()	;Cache of TEA Substitution tables
+			if(isobject(HKey)?HKey.__Class != this.__Class ".HashKey" : HKey != "") ;Checks if Hashkey was not provided
+				Values.InsertAt(1,HKey),HKey:=this.Default_HKey
+			;###  Check if call was to Clear TEA Substitution table cache
+			if(Values.length() == 0){
+				if(isobject(HKey) and HKey.kID != "") ;Clear for specific key
+					TEA_STbl[Hkey.kID]:=""
+				else if(!isobject(Hkey)) ;Clear completely
+					TEA_STbl:=Array()
+				return
+			}
+			;### Begin getting TEA substitution Table
+			if(TEA_STbl[HKey.kId] == "")	{	;Checks if TEA substitution table exists for HashKey
+				u:=0,v:=0
+				LHash:=Array()
+				Loop 256	;Builds substitution Table
+					index:=A_Index - 1,this.TEA(u,v,HKey),	LHash[index]:=(u<<32) | v
+				If(!HKey.onetime_use)
+					TEA_STbl[HKey.kId]:=LHash ;Caches Substitution table for later use.
+			}
+			else	;Gets substitution Table from cache
+				LHash:=TEA_STbl[HKey.kId]
+			;### Begin Calculating Hashes
+			Output:=Array()
+			if(HKey.bit == 128)		{ ;Use 128bit TEA algorithm? 
+				For i,value in Values		{
+					S:=0,R:=-1
+					Loop Parse, value	;Loop converts each character to a numeric value and adds characters together
+						R := (R << 8) + Asc(A_LoopField) ^ LHASH[(R >> 56) & 255],	S := (S << 8) + Asc(A_LoopField) - LHASH[(S >> 56) & 255]
+					Output.push(this.Hex8(R>>32) . this.Hex8(R) . this.Hex8(S>>32) . this.Hex8(S))	;Converts result numbers into 4 8 character long hex strings then concatenates
+				}
+			}
+			else { ;Use 64bit TEA algorithm
+				For i,value in Values		{
+					R:=0
+					Loop Parse, value ;Loop converts each character to a numeric value and adds characters together
+						R := (R << 8) + Asc(A_LoopField) ^ LHASH[(R >> 56) & 255]
+					output.push(this.Hex8(R>>32) . this.Hex8(R)) ;Converts result number into 2 8 character long hex strings then concatenates
+				}
+			}
+			return AHK.Helpers.Variadic_RTN_FMT_Optional(output*)
+		}
 		/*
 			Method - Call(method,value,HKey:="")
 			description - The Hash Function
@@ -24,40 +70,54 @@ Class Hash extends Lib.Obj.Meta.Call {
 			value - The value to be turned into a hash
 			HKey - Hash Key
 		*/
-		Call(method,value,HKey:="")	{
-				static STable:=Array()	;Cache of Substitution tables
-				if(value == "")	{ ;Clear Substitution table cache
-					if(HKey.__Class == this.__Class ".Hashkey") 
-						STable[Hkey.kID]:=""
-					else
-						STable:=Array()
+		Old_Call(method,value,HKey:="")	{
+				static TEA_STbl:=Array()	;Cache of TEA Substitution tables
+				if(value == "")	{ ;Clear TEA Substitution table cache
+					if(isobject(HKey) and HKey.kID != "") 
+						TEA_STbl[Hkey.kID]:=""
+					else if(!isobject(Hkey))
+						TEA_STbl:=Array()
 					return
 				}
-				;### Begin getting substitution Table
-				Hkey:=HKey.__Class == this.__Class ".Hashkey"?Hkey:this.Default_HKey.__Class == this.__Class ".Hashkey"?this.Default_HKey:new this.Hashkey(64,8,12,34,56,78,90) ;Ensures a valid Hashkey is used
-				if(STable[HKey.kId] == "")	{	;Checks if Hashkey substitution table is cached
+				Hkey:=isobject(HKey)?Hkey:this.Default_HKey ;Ensures a valid Hashkey is used
+				if(isobject(value))	;If Object is provided for the value then converts it to a String (via JSON)
+					value:=Ahk.obj.Json.Dump(value)
+				if(HKey.kId == "")  ;Checks if MD5 Algorithm should be used
+					return this.MD5(Value,HKey.cycles)
+				;### Begin getting TEA substitution Table
+				if(TEA_STbl[HKey.kId] == "")	{	;Checks if TEA substitution table exists for HashKey
 					u:=0,v:=0
 					LHash:=Array()
 					Loop 256	;Builds substitution Table
-						index:= A_Index - 1,this.TEA(u,v,HKey),	LHash[index]:=(u<<32) | v
+						index:=A_Index - 1,this.TEA(u,v,HKey),	LHash[index]:=(u<<32) | v
 					If(!HKey.onetime_use)
-						STable[HKey.kId]:=LHash ;Caches Substitution table for later use.
+						TEA_STbl[HKey.kId]:=LHash ;Caches Substitution table for later use.
 				}
 				else	;Gets substitution Table from cache
-					LHash:=STable[HKey.kId]
+					LHash:=TEA_STbl[HKey.kId]
 				;### Begin Calculating Hash
-				if(isobject(value))	;If Object is provided for the value then converts it to a String (via JSON)
-					value:=Lib.obj.Json.Dump(value)
-				if(HKey.bit == 128)	{	;Checks if Hash Key is 128 bit
-					S:=0,R:=-1
-					Loop Parse, value	;Loop converts each character to a numeric value and adds characters together
-						R := (R << 8) + Asc(A_LoopField) ^ LHASH[(R >> 56) & 255],	S := (S << 8) + Asc(A_LoopField) - LHASH[(S >> 56) & 255]
-					Return this.Hex8(R>>32) . this.Hex8(R) . this.Hex8(S>>32) . this.Hex8(S)	;Converts result numbers into 4 8 character long hex strings then concatenates
-				}
-				R:=0
-				Loop Parse, value ;Loop converts each character to a numeric value and adds characters together
-					R := (R << 8) + Asc(A_LoopField) ^ LHASH[(R >> 56) & 255]
-				Return this.Hex8(R>>32) . this.Hex8(R) ;Converts result number into 2 8 character long hex strings then concatenates
+				if(HKey.bit == 64)		{ ;Use 64bit TEA algorithm?
+					R:=0
+					Loop Parse, value ;Loop converts each character to a numeric value and adds characters together
+						R := (R << 8) + Asc(A_LoopField) ^ LHASH[(R >> 56) & 255]
+					return this.Hex8(R>>32) . this.Hex8(R) ;Converts result number into 2 8 character long hex strings then concatenates
+				}	
+				S:=0,R:=-1 ;Use 128bit TEA Algorithm
+				Loop Parse, value	;Loop converts each character to a numeric value and adds characters together
+					R := (R << 8) + Asc(A_LoopField) ^ LHASH[(R >> 56) & 255],	S := (S << 8) + Asc(A_LoopField) - LHASH[(S >> 56) & 255]
+				return this.Hex8(R>>32) . this.Hex8(R) . this.Hex8(S>>32) . this.Hex8(S)	;Converts result numbers into 4 8 character long hex strings then concatenates
+		}
+		/*
+		
+		
+		*/
+		MD5( ByRef Val,byref Len=0 ) { ; www.autohotkey.com/forum/viewtopic.php?p=275910#275910
+			VarSetCapacity( MD5_CTX,104,0 ), DllCall( "advapi32\MD5Init", Str,MD5_CTX )
+			DllCall( "advapi32\MD5Update", Str,MD5_CTX, Str,Val, UInt,Len ? Len : StrLen(Val) )
+			DllCall( "advapi32\MD5Final", Str,MD5_CTX )
+			Loop % StrLen( Hex:="123456789ABCDEF0" )
+				N := NumGet( MD5_CTX,87+A_Index,"Char"), MD5 .= SubStr(Hex,N>>4,1) . SubStr(Hex,N&15,1)
+			Return MD5
 		}
 		/*
 			Method - Hex8(i)
@@ -95,26 +155,30 @@ Class Hash extends Lib.Obj.Meta.Call {
 			onetime_use - Tells Hash function whether it should expect to see this Hashkey again.  0 - Tells it to cache the substitution table.
 			Keys* - The Key numbers to be used. If omitted or non-numbers are provided then random numbers will be generated.
 		*/
-		Class HashKey extends Lib.Obj.Meta.Call_Construct{
-			__New(hash_bit:=64,cycles:=32,onetime_use:=0,Keys*)	{
-				this.cycles:=cycles,this.bit:=hash_bit,this.kId:=rounds,this.onetime_use:=onetime_use,this.kNum:=keys.length() - 1
-				if(keys.length() == 0)	{ ;No Keys were input so Keys are randomly generated
-					Loop, 4
-					{
-						Random, key
-						this["k"	A_Index -1]:=Round(key), this.kId.="_" Round(key)
+		Class HashKey extends AHK.Lang.Class.Meta.Call_Construct{
+			__New(hash_bit:=64,cycles:=0,onetime_use:=0,Keys*)	{
+				if(hash_bit == 64 or hash_bit == 128){ ; Should use Tea algorithm?
+					this.bit:=hash_bit,this.cycles:=cycles?cycles:32,this.kId:=this.cycles,this.onetime_use:=onetime_use,this.kNum:=keys.length() - 1
+					if(keys.length() == 0)	{ ;No Keys were input so Keys are randomly generated
+						Loop, 4
+						{
+							Random, key
+							this["k"	A_Index -1]:=Round(key), this.kId.="_" Round(key)
+						}
+						this.kNum:=3
 					}
-					this.kNum:=3
-				}
-				else	{ ;Keys were in input so they are formatted for Hash function
-					loop, % keys.Length()
-					{
-						key:=keys[A_Index]
-						if key is not number
-							Random,key
-						this["k" A_Index - 1]:=Round(key),	this.kId.="_" Round(key)
+					else	{ ;Keys were in input so they are formatted for Hash function
+						loop, % keys.Length()
+						{
+							key:=keys[A_Index]
+							if key is not number
+								Random,key
+							this["k" A_Index - 1]:=Round(key),	this.kId.="_" Round(key)
+						}
 					}
 				}
+				else ;Use MD5 Algorithm
+					this.bit:=hash_bit,this.cycles:=cycles
 			}
 		}
 		;#### Functions Related to Hashtable

@@ -1,5 +1,5 @@
 	/**
- * Lib: Lib.obj.Json.ahk
+ * Lib: Ahk.obj.Json.ahk
  *     JSON lib for AutoHotkey.
  * Version:
  *     v2.1.3 [updated 04/18/2016 (MM/DD/YYYY)]
@@ -8,7 +8,7 @@
  * Requirements:
  *     Latest version of AutoHotkey (v1.1+ or v2.0-a+)
  * Installation:
- *     Use #Include Lib.obj.Json.ahk or copy into a function library folder and then
+ *     Use #Include Ahk.obj.Json.ahk or copy into a function library folder and then
  *     use #Include <JSON>
  * Links:
  *     GitHub:     - https://github.com/cocobelgica/AutoHotkey-JSON
@@ -20,7 +20,7 @@
 	/**
 	* Class: JSON
 	*     The JSON object contains methods for parsing JSON and converting values
-	*     to Lib.obj.Json. Callable - NO; Instantiable - YES; Subclassable - YES;
+	*     to Ahk.obj.Json. Callable - NO; Instantiable - YES; Subclassable - YES;
 	*     Nestable(via #Include) - NO.
 	* Methods:
 	*     Load() - see relevant documentation before method definition header
@@ -49,14 +49,14 @@
 		* Method: Load
 		*     Parses a JSON string into an AHK value
 		* Syntax:
-		*     value := Lib.obj.Json.Load( text [, reviver ] )
+		*     value := Ahk.obj.Json.Load( text [, reviver ] )
 		* Parameter(s):
 		*     value      [retval] - parsed value
 		*     text    [in, ByRef] - JSON formatted string
 		*     reviver   [in, opt] - function object, similar to JavaScript's
-		*                           Lib.obj.Json.parse() 'reviver' parameter
+		*                           Ahk.obj.Json.parse() 'reviver' parameter
 		*/
-		class Load extends Lib.Obj.Meta.Call_Functor		{
+		class Load extends AHK.Lang.Class.Meta.Call_Functor		{
 			Call(self, ByRef text, reviver:="")			{
 				this.rev := IsObject(reviver) ? reviver : false
 			; Object keys(and array indices) are temporarily stored in arrays so that
@@ -185,7 +185,7 @@
 					for i, k in this.keys[value] {
 						; check if ObjHasKey(value, k) ??
 						v := this.Walk(value, k)
-						if (v != Lib.obj.Json.Undefined)
+						if (v != Ahk.obj.Json.Undefined)
 							value[k] := v
 						else
 							ObjDelete(value, k)
@@ -198,16 +198,16 @@
 		* Method: Dump
 		*     Converts an AHK value into a JSON string
 		* Syntax:
-		*     str := Lib.obj.Json.Dump( value [, replacer, space ] )
+		*     str := Ahk.obj.Json.Dump( value [, replacer, space ] )
 		* Parameter(s):
 		*     str        [retval] - JSON representation of an AHK value
 		*     value          [in] - any value(object, string, number)
 		*     replacer  [in, opt] - function object, similar to JavaScript's
-		*                           Lib.obj.Json.stringify() 'replacer' parameter
-		*     space     [in, opt] - similar to JavaScript's Lib.obj.Json.stringify()
+		*                           Ahk.obj.Json.stringify() 'replacer' parameter
+		*     space     [in, opt] - similar to JavaScript's Ahk.obj.Json.stringify()
 		*                           'space' parameter
 		*/
-		class Dump extends Lib.Obj.Meta.Call_Functor		{
+		class Dump extends AHK.Lang.Class.Meta.Call_Functor		{
 			Call(self, value, replacer:="", space:="")			{
 				this.rep := IsObject(replacer) ? replacer : ""
 				this.gap := ""
@@ -225,7 +225,7 @@
 			Str(holder, key)			{
 				value := holder[key]
 				if (this.rep)
-					value := this.rep.Call(holder, key, ObjHasKey(holder, key) ? value : Lib.obj.Json.Undefined)
+					value := this.rep.Call(holder, key, ObjHasKey(holder, key) ? value : Ahk.obj.Json.Undefined)
 				if IsObject(value) {
 				; Check object type, skip serialization for other object types such as
 				; ComObject, Func, BoundFunc, FileObject, RegExMatchObject, Property, etc.
@@ -297,7 +297,7 @@
 		* Property: Undefined
 		*     Proxy for 'undefined' type
 		* Syntax:
-		*     undefined := Lib.obj.Json.Undefined
+		*     undefined := Ahk.obj.Json.Undefined
 		* Remarks:
 		*     For use with reviver and replacer functions since AutoHotkey does not
 		*     have an 'undefined' type. Returning blank("") or 0 won't work since these
@@ -305,7 +305,7 @@
 		*     Replacer() - the caller may return a non-serializable AHK objects such as
 		*     ComObject, Func, BoundFunc, FileObject, RegExMatchObject, and Property to
 		*     mimic the behavior of returning 'undefined' in JavaScript but for the sake
-		*     of code readability and convenience, it's better to do 'return Lib.obj.Json.Undefined'.
+		*     of code readability and convenience, it's better to do 'return Ahk.obj.Json.Undefined'.
 		*     Internally, the property returns a ComObject with the variant type of VT_EMPTY.
 		*/
 		Undefined[]		{
