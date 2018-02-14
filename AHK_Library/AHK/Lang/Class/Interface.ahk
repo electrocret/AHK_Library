@@ -56,6 +56,17 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 			this.Interface_Definition:="" ;Clears Interface_Definition from memory
 		}
 	}
+	Cache_Clear(){
+		this.Cache_Clear_GlobalClass(),	this.Cache_Clear_FuncParam()
+	}
+	Cache_Clear_GlobalClass(){
+		this.C_GlobalClass:=Array()
+	}
+	Cache_Clear_FuncParam(){
+		this.C_FuncParam:="",this.C_FuncParam_Usage:=""
+	}
+	
+	
 	isImplemented(byref Obj){
 		this.Finalize(1)
 		if(!AHK.Obj.Class.isPrototype(Obj)) { ;If Object is not a prototype
@@ -64,7 +75,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 				if(isobject(this.C_FuncParam)){ ;Checks if Function Parameters are in memory
 					this.C_FuncParam_Usage-- ;Decrements Function Parameter cache usage
 					if(this.C_FuncParam_Usage<1) ;If Function Parameter cache usage hasn't been used 9 times in a row then
-					this.ClearCache_FuncParam() ;Clear Function Parameter cache from memory
+					this.Cache_Clear_FuncParam() ;Clear Function Parameter cache from memory
 				}
 				return this.C_GlobalClass[Cache_ID] ;Returns GlobalClass Cache value
 			}
@@ -77,69 +88,60 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 		not_implemented:=1,break ;Marks not implemented and exits For Loop
 		if(Cache_ID != "") ;If Cache ID for GlobalClass Cache has been generated
 		this.C_GlobalClass[Cache_ID]:=!not_implemented ;Store implementation result in GlobalClass Cache
-	return !not_implemented
-}
-
-
-___New(Interface_Definition:="",Make_C_FuncParam:=1){
-	static ID_Enumerator:=0 ;Defines ID ENumerator to ensure each Interface has its own ID.
-	ID_Enumerator++ ;Enumerates Interface ID
-	this.ID:=ID_Enumerator ;Records ID to Interface
-	this.C_GlobalClass:=Array() ;Defines GlobalClass Implementation cache
-	if(!isobject(Interface_Definition) and Interface_Definition != "") ;Checks if Interface_Definition is possibly Object in text format.
-	Interface_Definition:=AHK.Obj.JSON.Load(Interface_Definition) ;Tries converting Interface_Definition from JSON
-	if(isobject(Interface_Definition) and isobject(Interface_Definition.Description) and isobject(Interface_Definition.Parameters)) ;Checks Interface_Definition validity
-	this.C_FuncParam:=Make_C_FuncParam?Interface_Definition.Parameters:"" ;Interface_Definition is valid. Keeps Function Parameters cached in memory for initial implementation testing.
-	else
-	Interface_Definition:={Purpose:"Undefined",Description:{},Parameters:{}}	;Sets Interface_Definition to default
-	AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to file cache
-}
-
-ClearCache(){
-	this.ClearCache_GlobalClass(),	this.ClearCache_FuncParam()
-}
-ClearCache_GlobalClass(){
-	this.C_GlobalClass:=Array()
-}
-ClearCache_FuncParam(){
-	this.C_FuncParam:="",this.C_FuncParam_Usage:=""
-}
-Define(byref Function_Name,byref Description,Parameters:=0,Make_C_FuncParam:=1){
-	Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Loads Interface_Definition from cache file
-	Interface_Definition.Parameters[Function_Name]:=Parameters ;Sets expected Parameters for function
-	Interface_Definition.Description[Function_Name]:=Description ;Sets Function description
-	AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to cache file
-	if(Make_C_FuncParam) ;Checks if FuncParam cache should be created
-	this.ClearCache_GlobalClass(),this.C_FuncParam:=Interface_Definition.Parameters ;Clears GlobalClass Cache and updates FuncParam cache
-	else
-	this.ClearCache() ;Clears both FuncParam and GlobalClass Cache
-}
-Purpose(Interface_Purpose){
-	Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Loads Interface_Definition from cache file
-	Interface_Definition.Purpose:=Interface_Purpose ;Sets Interface Purpose
-	AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to cache file
-}
-
-Definition(Display_Msgbox:=1,Function:="",info_type:=0){
-	if(!isobject(this.Cache_Interface_Definition)) ;Checks if Interface Definition has been loaded into memory
-	Original_Loader:=1, this.Cache_Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Marks this function call as original definition loader and Loads Interface_Definition from cache file
-	if(function == ""){
-		
-		
+		return !not_implemented
 	}
-	else
-	{
-		
-		
+	
+	
+	___New(Interface_Definition:="",Make_C_FuncParam:=1){
+		static ID_Enumerator:=0 ;Defines ID ENumerator to ensure each Interface has its own ID.
+		ID_Enumerator++ ;Enumerates Interface ID
+		this.ID:=ID_Enumerator ;Records ID to Interface
+		this.C_GlobalClass:=Array() ;Defines GlobalClass Implementation cache
+		if(!isobject(Interface_Definition) and Interface_Definition != "") ;Checks if Interface_Definition is possibly Object in text format.
+		Interface_Definition:=AHK.Obj.JSON.Load(Interface_Definition) ;Tries converting Interface_Definition from JSON
+		if(isobject(Interface_Definition) and isobject(Interface_Definition.Description) and isobject(Interface_Definition.Parameters)) ;Checks Interface_Definition validity
+		this.C_FuncParam:=Make_C_FuncParam?Interface_Definition.Parameters:"" ;Interface_Definition is valid. Keeps Function Parameters cached in memory for initial implementation testing.
+		else
+		Interface_Definition:={Purpose:"Undefined",Description:{},Parameters:{}}	;Sets Interface_Definition to default
+		AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to file cache
 	}
-	if(Original_Loader) ;Checks if this function call was original Interface_Definition loader
-	this.Cache_Interface_Definition:="" ;Clears Interface_Definition from memory
-}
-Definition_Dump(){
-	return AHK.Obj.JSON.Dump(AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID))
-}
+	
+	Define(byref Function_Name,byref Description,Parameters:=0,Make_C_FuncParam:=1){
+		Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Loads Interface_Definition from cache file
+		Interface_Definition.Parameters[Function_Name]:=Parameters ;Sets expected Parameters for function
+		Interface_Definition.Description[Function_Name]:=Description ;Sets Function description
+		AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to cache file
+		if(Make_C_FuncParam) ;Checks if FuncParam cache should be created
+		this.Cache_Clear_GlobalClass(),this.C_FuncParam:=Interface_Definition.Parameters ;Clears GlobalClass Cache and updates FuncParam cache
+		else
+		this.Cache_Clear() ;Clears both FuncParam and GlobalClass Cache
+	}
+	Purpose(Interface_Purpose){
+		Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Loads Interface_Definition from cache file
+		Interface_Definition.Purpose:=Interface_Purpose ;Sets Interface Purpose
+		AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to cache file
+	}
+	
+	Definition(Display_Msgbox:=1,Function:="",info_type:=0){
+		if(!isobject(this.Cache_Interface_Definition)) ;Checks if Interface Definition has been loaded into memory
+		Original_Loader:=1, this.Cache_Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Marks this function call as original definition loader and Loads Interface_Definition from cache file
+		if(function == ""){
+			
+			
+		}
+		else
+		{
+			
+			
+		}
+		if(Original_Loader) ;Checks if this function call was original Interface_Definition loader
+		this.Cache_Interface_Definition:="" ;Clears Interface_Definition from memory
+	}
+	Definition_Dump(){
+		return AHK.Obj.JSON.Dump(AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID))
+	}
 }
 
 
 ; Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Loads Interface_Definition from cache file
-	; AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to cache file				
+; AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to cache file				
