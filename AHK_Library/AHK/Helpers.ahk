@@ -25,10 +25,10 @@ Class Helpers{
 		Default_Value:=Val
 	}
 	Config_Load(Class_Obj,Default_Config:="",Config_Line:=1){
-		return AHK.Obj.json.read(A_ScriptDir "\AHK_Library\Config\" AHK.Lang.Class.Global_FullName(Class_Obj) ".json",Config_Line,Default_Config)
+		return AHK.Obj.json.read(A_ScriptDir "\AHK_Library\Config\" AHK.Lang.Class.Global.Name(Class_Obj) ".json",Config_Line,Default_Config)
 	}
 	Config_Save(Class_Obj,Config_Obj,Config_Line:=1){
-		return AHK.Obj.Json.write(A_ScriptDir "\AHK_Library\Config\" AHK.Lang.Class.Global_FullName(Class_Obj) ".json",Config_Obj,Config_Line)
+		return AHK.Obj.Json.write(A_ScriptDir "\AHK_Library\Config\" AHK.Lang.Class.Global.Name(Class_Obj) ".json",Config_Obj,Config_Line)
 	}
 	Cache_CacheDir(cdir:=""){
 		static cachedir:=0
@@ -45,10 +45,10 @@ Class Helpers{
 		return cachedir
 	}
 	Cache_Load(Class_Obj,Default_Cache:="",Cache_Line:=1){
-		return AHK.Obj.json.read(this.Cache_CacheDir() AHK.Lang.Class.Global_FullName(Class_Obj) ".json",Cache_Line,Default_Cache)
+		return AHK.Obj.json.read(this.Cache_CacheDir() AHK.Lang.Class.Global.Name(Class_Obj) ".json",Cache_Line,Default_Cache)
 	}
 	Cache_Save(Class_Obj,Cache_Obj,Cache_Line:=1){
-		return AHK.Obj.Json.write(this.Cache_CacheDir() AHK.Lang.Class.Global_FullName(Class_Obj) ".json",Cache_Obj,Cache_Line)
+		return AHK.Obj.Json.write(this.Cache_CacheDir() AHK.Lang.Class.Global.Name(Class_Obj) ".json",Cache_Obj,Cache_Line)
 	}
 	tshoot(variables*)	{	
 		output:=""
