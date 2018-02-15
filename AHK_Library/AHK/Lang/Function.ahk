@@ -25,6 +25,10 @@ Class Func{
 		return isobject(function) and isfunc(function)?function.Call(Parameters*):instr(function,".")?%Function%(AHK.Lang.Class.Global(substr(function,1,instr(function,".",,-1)-1)),Parameters*):%Function%(Parameters*)
 	}
 	ClassName(function){
-			return isobject(function)?substr(function.name,1,instr(function.name,".",,-1)-1):substr(function,1,instr(function,".",,-1)-1)
+		Name:=this.Name(Function)
+		return substr(name,1,instr(name,".",,-1)-1)
+	}
+	Name(function){
+		return isobject(function)?function.name:function
 	}
 }
