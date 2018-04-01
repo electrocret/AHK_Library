@@ -1,6 +1,6 @@
 Class Func{
 	isFunc(function){
-		return instr(isobject(function)?function.name:function,".")?isfunc(function)-1:isfunc(function)
+		return !isfunc(function)?0:instr(isobject(function)?function.name:function,".")?isfunc(function)-1:isfunc(function)
 	}
 	isVariadic(function){
 		return isobject(function)?function.isVariadic:Func(function).isVariadic
@@ -22,13 +22,17 @@ Class Func{
 		return minparam and Parameter_Count >= minparam-1 and (this.MaxParams(function) >= Parameter_Count or this.isVariadic(Function))	
 	}
 	Global_Call(function,byref Parameters*)	{
-		return isobject(function) and isfunc(function)?function.Call(Parameters*):instr(function,".")?%Function%(AHK.Lang.Class.Global(substr(function,1,instr(function,".",,-1)-1)),Parameters*):%Function%(Parameters*)
+		return !isfunc(function)?"":isobject(function)?(Parameters.length()?function.Call(Parameters*):function.Call()):instr(function,".")?(Parameters.length()?%Function%(AHK.Lang.Class.Global(substr(function,1,instr(function,".",,-1)-1)),Parameters*):%Function%(AHK.Lang.Class.Global(substr(function,1,instr(function,".",,-1)-1)))):(Parameters.length()?%Function%(Parameters*):%Function%())
 	}
-	ClassName(function){
-		Name:=this.Name(Function)
+	ClassName(byref function){
+		Name:=this.FullName(Function)
 		return substr(name,1,instr(name,".",,-1)-1)
 	}
-	Name(function){
+	FullName(byref function){
 		return isobject(function)?function.name:function
+	}
+	Name(function){
+		FName:=this.FullName(Function)
+		return instr(FName,".")?substr(FName,instr(FName,".",,0)+1):FName
 	}
 }

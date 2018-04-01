@@ -1,147 +1,466 @@
+/*
+	TODO:
+	DOCUMENTATION!!!!!!!!
+	
+	
+	Interface_Definition:
+	
+	Documentation {
+	Desc: Interface's Documentation/Purpose/Usage
+	Name:Interface's Global Reference
+	Func{
+	%function_Name%
+	{
+	Desc:Function Documentation
+	Param_names: Names of parameters in function (formatted like how they'd be in a script)
+	}
+	}
+	}
+	
+	
+	Definition {
+	Inherit
+	Func{
+	%function_Name% (Functions w/o parameters have a non-object value)
+	{
+	Param_Cnt: # of parameters required for function to be called
+	Param_Ref: Linear array of whether parameter should be local/byref. (1=Local, 2=Byref, 0=Don't care)
+	variadic: boolean on whether function is variadic
+	}
+	}
+	
+	}
+	
+	Impl_Issue {
+	Inherit: Inherit Impl_Issues
+	func{
+	%function_Name% 
+	[ ;Linear array of issues
+	Issue types:
+	-1 -Function does not exist
+	0 -Expected no Parameters
+	1 -Accepted parameter count is wrong
+	2 -Expected Variadic function
+	3.x -Expected Param to be byref (x=problem param #)
+	4.x -Expected Param to not be Byref (x=problem param #)
+	]
+	
+	
+	
+	}
+	
+	}
+	
+	
+	AHK.Helpers.Cache_Obj_Lock(this,"Definition",A_thisfunc,this.ID *2) ;Locks Definition
+	AHK.Helpers.Cache_Obj_Unlock(this,"Definition",A_thisfunc) ;Unlocks Definition
+	
+	
+	AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+	AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+	
+	
+	
+	
+*/
+
+
 Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
-	__New(Interface_Definition:="")	{
-		this.Definition_Validate(Interface_Definition)
+	static RTest:=""
+	__New(Interface_Dump:="")	{
+		this.Validate(Interface_Dump)
 	}
-	isImplemented(byref Obj){
+	Validate(Import_Dump:="") {
+		if(this.isNotFinal(1)){ ;Is Interface Not Final?
+			if(Import_Dump == "")  ;Was Import_Dump not provided?
+				Import_Dump:=this.Documentation == "" and this.Definition == ""?this.Interface_Import:{Documentation:this.Documentation,Definition:this.Definition},this.Interface_Import:=""
+			if(!isobject(Import_Dump) and Import_Dump != "") ;Was Import_Dump provided but is not an object?
+			Import_Dump:=AHK.Obj.JSON.Load(Import_Dump) ;Try to convert Import_Dump from JSON
+			if(!isobject(Import_Dump.Definition) and Import_Dump.hasKey("Definition")) ;Does Import_Dump have a Definition Value but it's not an object?
+			Import_Dump.Definition:=AHK.Obj.JSON.Load(Import_Dump.Definition) ;Try converting Import_Dump.Definition from JSON	
+			if(!isobject(Import_Dump.Documentation) and Import_Dump.hasKey("Documentation")) ;Does Import_Dump have a Documentation Value but it's not an object?
+			Import_Dump.Documentation:=AHK.Obj.JSON.Load(Import_Dump.Documentation) ;Try converting Import_Dump.Documentation from JSON	
+			If(isobject(Import_Dump.Documentation) and isObject(Import_Dump.Definition) and isobject(Import_Dump.Documentation.Func) and isobject(Import_Dump.Definition.Func) and (this.isInterface(Import_Dump.Definition.Inherit) or Import_Dump.Definition.Inherit == ""))		{ ;Does Import_Dump have everything to be a valid interface definition/documentation?
+				this.Definition:=Import_Dump.Definition ;Copies Definition
+				,Import_Dump.Documentation.Name:=this.isInterface(Import_Dump.Documentation.Name)?Import_Dump.Documentation.Name:This.Documentation.Name ;Does Import_Dump have a valid name for the interface? Yes-Use it, No-Keep current Name
+				,this.Documentation:=Import_Dump.Documentation ;Copies Documentation
+			}
+			else	{ ;Invalid Import_Dump so sets Definition/Documentation to default
+				this.Definition:={Func:{},Cache_Usage:9}
+				,this.Documentation:={Func:{}}
+			}
+		}
+	}
+	isNotFinal(byref throw_error:=0){
+		if(throw_error and AHK.lang.Logic.isType.digit(this.ID) and this.ID != "") 
+		throw Exception("Attempting to alter definition on finalized Interface -" this.ID,this.Doc_Name())
+		return this.RTest == "" and !(AHK.lang.Logic.isType.digit(this.ID) and this.ID != "")
+	}
+	
+	isInterface(byref Interface_Reference,byref Mode:=0){
+		if(Interface_Reference != "AHK.Lang.Class.Interface") {
+			if(!isobject(Interface_Reference) and Instr(Interface_Reference,"()") == (StrLen(Interface_Reference) - 1)) ;Checks for Func Interface Name
+			Interface_Type:=2,this.RTest:=1,Interface:=AHK.Lang.Func.Global_Call(Substr(Interface_Reference,1,StrLen(Interface_Reference) - 2)),this.RTest:=""
+			else if(AHK.Lang.Func.isFunc(Interface_Reference) == 1) ;Checks Func Interface Ref
+			Interface_Type:=2,this.RTest:=1,Interface:=AHK.Lang.Func.Global_Call(Interface_Reference),this.RTest:=""
+			else	;Checks for Class Interface Ref
+			Interface_Type:=1,Interface:=AHK.Lang.Class.Global(Interface_Reference)
+		}
+		return !isobject(Interface) or !AHK.lang.Class.Extends(Interface,"Ahk.Lang.Class.Interface")?0:Mode?Interface:Interface_Type
+	}
+	Name_Generate(byref Interface_Reference,byref Interface_Type:="")	{
+		return (Interface_Type ?Interface_Type:this.isInterface(Interface_Reference)) == 1?AHK.Lang.Class.Global.Name(Interface_Reference) :Instr(Interface_Reference,"()") == StrLen(Interface_Reference) - 1?Interface_Reference:AHK.Lang.Func.Name(Interface_Reference) "()"
+	}
+	Finalize(){
 		static ID_Enumerator:=0
-		if(this.isNotFinal()) ;Checks if Interface is not final, and finalizes it
+		if(this.isNotFinal()) {
+			this.Validate() ;Ensures Interface has valid Definition/Documentation
+			,this.Define_Name(this) ;Defines Interface Name for Interface Classes (does nothing for Function Interfaces)
+			,this.Define_Name(this.Documentation.Name) ;Verifies Interface Name returns interface
+			if(!this.isInterface(this.Documentation.Name)) ;Verifies Documentation still has valid Interface Name
+			throw Exception("Attempting to finalize Interface without a valid Name. '" this.Documentation.Name "'")
+			this.Definition.Cache_Usage:=AHK.lang.logic.isType.Digit(this.Definition.Cache_Usage)?this.Definition.Cache_Usage:9 ;Ensures Cache_Usage is valid ( "" - Always Keep Definition in Memory, 0-Never keep definition in memory #>0 - Cache hasn't been used that many times during Implement test the remove from mem.
+			,ID_Enumerator++ ;Enumerates new Interface ID
+			,This.ID:=ID_Enumerator ;Assigns New Interface ID to this Interface
+			,AHK.Helpers.Cache_Save(AHK.Lang.Func.ClassName(A_Thisfunc),this.Documentation,this.ID * 2 - 1) ;Writes Interface Documentation to Cache file
+			,AHK.Helpers.Cache_Save(AHK.Lang.Func.ClassName(A_Thisfunc),this.Definition,this.ID * 2) ;Writes Interface Definition  to cache file
+			,this.GlobalClass_Cache:=Array() ;Creates global class cache
+			,this.Documentation:=""
+			if(this.Definition.Cache_Usage == 0)
+				this.Definition:=""
+			else
+				this.Definition_CacheLock:=Array()
+			
+		}
+	}
+	
+	;Interface Implementation testing functions section
+	Implement_Test(byref Objs*){
+		static Inherit_lp_check:=Array()
+		Output:=Array() ;Stores Final results
+		if(!Inherit_lp_check.hasKey( "I" this.ID)){ ;Inherit Loop Prevention check
+			this.Finalize()
+			,Cache_Names:=Array()
+			,NeedTesting:=Array() ;Temp array for objects whose implementation results aren't cached
+			For i,Obj in Objs
+			{
+				if(isobject(Obj)){ ;Is Obj actually an object?
+					if(!AHK.lang.Class.isPrototype(Obj)) { ;Is object not a prototype ?
+						Cache_Names[i]:=StrReplace(AHK.lang.Class.Global.Name(Obj),".","#") ;Generates Cache friendly name for Class's Global Name.
+						if(this.GlobalClass_Cache.hasKey(Cache_Names[i])) { ;is Class's Cache friendly name in Cache?
+							if(isobject(this.GlobalClass_Cache[Cache_Names[i]]))
+							Output[i]:=this.GlobalClass_Cache[Cache_Names[i]] ;Gets Cached result for Class
+							continue
+						}
+					}
+					NeedTesting[i]:=Obj
+				}
+				else ;Adds Non-Object Error to Output
+				Output[i]:={Class:"{Non-Object}",Value:Obj}
+			}
+			if(NeedTesting.MinIndex() != ""){ ;Were there misses in the GlobalClass_Cache?
+				AHK.Helpers.Cache_Obj_Lock(this,"Definition",A_thisfunc,this.ID *2) ;Locks Definition
+				this.DefCache_Usage:=This.Definition.Cache_Usage ;Marks Cache miss
+				if(this.Definition.Inherit != ""){ ;is there an Inherited Interface?
+					Inherit_lp_check["I" this.ID]:=1 ;Enables Inherit Loop Prevention
+					Inherit_Issues:=this.isInterface(this.Definition.Inherit,1).Implement_Test(NeedTesting*) ;Gets Inherited Interface results
+					,Inherit_lp_check.Remove("I" this.ID) ;Disables Inherit Loop Prevention
+				}
+				Func_Impl_Issues:=Array()
+				PerFunc_Impl_Issues:=Array()
+				For i,Obj in NeedTesting
+				{
+					if(this.GlobalClass_Cache.hasKey(Cache_Names[i])){  ;is Class's Cache friendly name in Cache?
+						if(isobject(this.GlobalClass_Cache[Cache_Names[i]]))
+						Output[i]:=this.GlobalClass_Cache[Cache_Names[i]] ;Gets Cached result for Class
+					}
+					else
+					{
+						For func_name,func_def in this.Definition.Func ;For each function definition
+						{
+							if(!AHK.Lang.Func.isfunc(obj[func_name])) ;Function exists?
+							PerFunc_Impl_Issues.push(-1) ;Error - Function does not exist
+							else if(isobject(func_def)) { ;Function Definition defines parameters
+								if(!AHK.Lang.Func.willCall(obj[func_name],func_def.param_cnt)) ;Ensures Obj function will accept specified # of parameters
+								PerFunc_Impl_Issues.push(1) ;Error - Will not accepts specified # of parameters
+								else if(isobject(func_def.Param_Ref)) ;Checks if Function Definition specifies Parameter's reference
+								For p_index, Ref in func_def.Param_Ref
+								if(Ref) { ;is Param Ref Specified?
+									isBR:=AHK.Lang.Func.isByref(obj[func_name],p_Index) ;Get byref for param in Obj function
+									if((isBR and Ref == 2) or (!isBR and Ref == 1)) ;Does Reference match what's specified in Param_Ref?
+									PerFunc_Impl_Issues.push( (isBR?4:3) "." p_index) ;Error - Param reference doesn't match what's specified
+								}
+								if(func_def.variadic and !AHK.lang.Func.isVariadic(obj[func_name])) ;Ensures Obj function is variadic
+								PerFunc_Impl_Issues.push(2) ;Error - Func is not variadic
+							}
+							else if(AHK.lang.func.MinParams(obj[func_name])!=0) ;Function Definition defines no parameters - Ensures function has no parameters
+							PerFunc_Impl_Issues.push(0) ;Error - Expecting no Parameters
+							if(PerFunc_Impl_Issues.length())	{ ;Was the function not implemented properly?
+								if(!isobject(Func_Impl_Issues[i]))
+									Func_Impl_Issues[i]:=Array()
+								Func_Impl_Issues[i][func_name]:=PerFunc_Impl_Issues ;Marks Function in implementation issues
+								,PerFunc_Impl_Issues:=Array() ;Creates blank PerFunc_Impl_Issues array
+							}
+						}
+						if(isobject(Func_Impl_Issues[i]) or isObject(Inherit_Issues[i])) { ;Are there issues with Implementation?
+							Impl_Issues:=Array()
+							Impl_Issues.func:=Func_Impl_Issues[i]
+							Impl_Issues.Inherit:=Inherit_Issues[i]
+							Impl_Issues.Class:=AHK.lang.class.isPrototype(Obj)?"{Prototype Object}":AHK.lang.class.Global.Name(Obj)
+						}
+						else
+							Impl_Issues:="" ;Clears Impl_Issues for memory savings
+						if(Cache_Names.hasKey(i)) ;Is there a cache ID?
+						this.GlobalClass_Cache[Cache_Names[i]]:=Impl_Issues ;Caches Implementation issues
+						if(isobject(Impl_Issues))
+						Output[i]:=Impl_Issues ;Stores Impl_Issues to Output
+					}
+				}
+			}
+			if(this.DefCache_Usage != "")	{
+				if(this.DefCache_Usage < 1) ;has cache been hit a defined amount of times?
+				this.DefCache_Usage:="",AHK.Helpers.Cache_Obj_Unlock(this,"Definition",A_thisfunc) ;Unlocks Definition
+				else
+				this.DefCache_Usage-- ;Decrements Definition usage
+			}
+		}
+		return output
+	}
+	Implement_Exception(byref Impl_Issue,byref Obj)	{
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		name:=this.Doc_Name()
+		msg:=this.Implement_Exception_Msg(Impl_Issue,Obj)
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		throw Exception(msg,name)
+	}
+	Implement_Exception_Msg(byref Impl_Issue,byref Obj,byref Inherit_msg:=0){
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		if(Impl_Issue.Class == "{Non-Object}")	
+		msg:= "Interface '"  this.Doc_Name()  "' received Non-Object: '" Obj "'" 
+		else
 		{
-			this.Definition_Validate() ;Ensures Interface has valid Definition
-			,this.Define_Ref(this) ;Defines Interface Reference for Interface Classes (does nothing for Function Interfaces)
-			,this.Define_Ref(this.Interface_Definition.Ref) ;Verifies Interface Reference is valid
-			if(this.Interface_Definition.Ref_Type == "") ;Stops finalizing because Interface Reference is invalid
+			msg:=!Inherit_msg?"Functions for Interface '" this.Doc_Name() "' are not implemented by '" Impl_Issue.Class "':":isobject(Impl_Issue.func)?"Functions for Inherited Interface '" this.Doc_Name() "' are not implemented by '" Impl_Issue.Class "':":"Inherits Interface '" this.Doc_Inherit() "'"
+			if(isobject(Impl_Issue.func)) {
+				For func_name, func_issues in Impl_Issue.func
+				{
+					func_documentation:=this.Documentation.func[func_name]
+					msg.="`n " this.Doc_Func_Call(func_name)
+					For i,func_issue in func_issues
+					msg.=(i==1?"  -":", ") this.Implement_Exception_Func_Msg(func_name,func_issue)
+				}
+			}
+			if(isobject(Impl_Issue.Inherit)) ;Were there issues with inherited Interface?				
+				msg.=(isobject(Impl_Issue.func)?"`n`n":"`n") this.isInterface(this.Doc_Inherit(),1).Implement_Exception_Msg(Impl_Issue.Inherit,Obj,1)
+		}
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		return msg
+	}
+	Implement_Exception_Func_Msg(byref func_name,byref Issue_Type)	{
+		if(Issue_Type == -1)
+		return "Does not exist"
+		if(Issue_Type == 0)
+		return "No required parameters expected"
+		if(Issue_Type == 1){
+			AHK.Helpers.Cache_Obj_Lock(this,"Definition",A_thisfunc,this.ID *2) ;Locks Definition
+			msg:="Expected to accept " this.Definition.func[func_name]["param_cnt"] " parameter/s"
+			AHK.Helpers.Cache_Obj_Unlock(this,"Definition",A_thisfunc) ;Unlocks Definition
+			return msg
+		}
+		if(Issue_Type == 2)
+		return "Variadic Expected"
+		if(InStr(Issue_Type,"3.") == 1)
+		return "Expecting Parameter " substr(Issue_Type,3) " to be Byref"
+		if(InStr(Issue_Type,"4.") == 1)
+		return "Expecting Parameter " substr(Issue_Type,3) " to not be Byref"
+		return "Undefined Issue Type: " Issue_Type
+	}
+	isImplemented(byref Objs*){
+		Test_Result:=this.Implement_Test(Objs*)
+		if(isObject(Test_Result[Test_Result.MinIndex()])) { ;Are there any implementation issues?
+			this.Implement_Exception(Test_Result[Test_Result.MinIndex()],Objs[Test_Result.MinIndex()])
 			return 0
-			ID_Enumerator++ ;Enumerates Interface ID
-			,this.ID:=ID_Enumerator ;Records ID to Interface
-			,AHK.Helpers.Cache_Save(AHK.Lang.Func.ClassName(A_Thisfunc),this.Interface_Definition,this.ID) ;Writes Interface_Definition to file cache
-			,this.C_FuncParam:=this.Interface_Definition.Func_Params
-			,this.C_FuncParamBR:=this.Interface_Definition.Func_Params_Byref
-			,this.C_FuncParam_Usage:=9
 		}
-		
-		if(!AHK.Obj.Class.isPrototype(Obj)) { ;If Object is not a prototype then check Cache
-			Cache_ID:=StrReplace(AHK.Obj.Class.Global.Name(Obj),".","#") ;Generates Var friendly name for Class's Global Name.
-			if(this.C_GlobalClass.hasKey(Cache_ID)) { ;Checks if GlobalClass cache has value for class's implementation of interface in it.
-				if(isobject(this.C_FuncParam)){ ;Checks if Function Parameters are in memory
-					this.C_FuncParam_Usage-- ;Decrements Function Parameter cache usage
-					if(this.C_FuncParam_Usage<1) ;If Function Parameter cache usage hasn't been used 9 times in a row then
-					this.Cache_Clear_FuncParam() ;Clear Function Parameter cache from memory
-				}
-				return this.C_GlobalClass[Cache_ID] ;Returns GlobalClass Cache value
-			}
-		}
-		this.C_FuncParam_Usage:=9 ;Mark Function Parameter cache as being used, and start counter over.
-		if(!isobject(this.C_FuncParam)){ ;If Function Cache is not in memory
-			Interface_Definition:=AHK.Helpers.Cache_Load(this,{Func_Desc:{},Func_Params:{},Func_Params_Byref:{},Ref:"{Reference is Undefined}",Purpose:"{Purpose is Undefined}"},this.ID) ;Loads Interface Definition into memory
-			this.C_FuncParam:=Interface_Definition.Func_Params ;Grabs Function Parameters from Definition
-			this.C_FuncParamBR:=Interface_Definition.Func_Params_Byref ;Grabs Function byref parameters from definition
-		}
-		For function, parameters in this.C_FuncParam ;For each function in interface
+		return 1
+	}
+	Filter(byref Arrs*){
+		Empty:=0
+		For ai,Arr in Arrs
 		{
-			if(!AHK.Lang.Func.willCall(obj[function],Parameters)) ;Check if Function will accept specified # of parameters
-			not_implemented:=1,break ;Marks not implemented and exits For Loop
-			For i,Param_Index in this.C_FuncParamBR[function] ;Checks if specified parameters are byref
-			if(!AHK.Lang.Func.isByref(obj[function],Param_Index))
-			not_implemented:=1,break ;Marks not implemented and exits For Loop
-			if(not_implemented)
-			break
+			for index,impl_isue in this.Implement_Test(Arr*)
+			Arrs[ai].remove(index)
+			Empty:=Empty or Arrs[ai].MinIndex() == ""
 		}
-		if(Cache_ID != "") ;If Cache ID for GlobalClass Cache has been generated
-		this.C_GlobalClass[Cache_ID]:=!not_implemented ;Store implementation result in GlobalClass Cache
-		return !not_implemented
+		return !Empty
 	}
-	Definition_Validate(byref Import_Definition:="")	{
-		if(this.isNotFinal()){ ;Ensures Interface has not been finalized
-			if(Import_Definition == "") ;Checks if a Definition to be imported needs to be validated, if not then validates current Interface_Definition
-			Import_Definition:=this.Interface_Definition
-			if(!isobject(Import_Definition) and Import_Definition != "") ;Checks if Import_Definition is possibly Object in JSON text format.
-			Import_Definition:=AHK.Obj.JSON.Load(Import_Definition) ;Tries converting Interface_Definition from JSON	
-			this.Interface_Definition:=isobject(Import_Definition) and isobject(Import_Definition.Func_Desc) and isobject(Import_Definition.Func_Params)and isobject(Import_Definition.Func_Params_Byref)?Import_Definition:{Func_Desc:{},Func_Params:{},Func_Params_Byref:{},Ref:"{Reference is Undefined}",Purpose:"{Purpose is Undefined}"}	;Checks if Interface_Definition parameter is valid. If so then sets it to this. if not sets this to default blank Interface_Definition
-		}
-	}
-	isNotFinal(){
-		return this.ID is not digit or this.RTest
-	}
-	Define_Ref(byref Interface_Reference){
-		if(this.isNotFinal()) { ;ensures Interface is not finalized
+	
+	
+	;Defining Functions section
+	Define_Name(byref Interface_Reference){
+		if(this.isNotFinal(1)) { ;ensures Interface is not finalized
 			if(AHK.Lang.Class.Global.Name(Interface_Reference) != "AHK.Lang.Class.Interface") { ;Ensures Reference isn't global interface class
-				this.Definition_Validate() ;Ensures Interface has a valid Definition
-				Random, ref_verify ;Generates random # to verify Interface_Reference return
-				this.RTest_RVerify:=ref_verify ;Assigns Random # to Interface
-				,this.RTest:=1 ;Starts Reference Testing
-				if(AHK.Lang.Func.isFunc(Interface_Reference) == 1) { ;Checks if this is a Function interface
-					ref_type:=2 ;Marks Ref type as function
-					,RTest_Result:=AHK.Lang.Func.Call_Global(Interface_Reference).RTest_RVerify == this.RTest_RVerify ;Verifies Interface_Reference func returns same Interface
-					,Ref:=AHK.Lang.Func.Name(Interface_Reference) ;Gets plain text name of function
+				this.Validate() ;Ensures this Interface has a valid Definition/Documentation
+				Ref_Type:=this.isInterface(Interface_Reference) ;Ensures Interface reference returns an Interface
+				if(Ref_Type)	{
+					Random, ref_verify ;Generates random # to verify Interface_Reference return
+					Interface_Name:=this.Name_Generate(Interface_Reference,Ref_Type)
+					,this.RTest_RVerify:=ref_verify ;Assigns Random # to Interface
+					,this.RTest:=1 ;Enables Reference Testing
+					,RTest_Result:=this.isInterface(Interface_Name,1).RTest_RVerify == this.RTest_RVerify ;Checks if Randomly assigned # is on Referenced Interface
+					,this.RTest:="", this.RTest_RVerify:="" ;Disables Reference Testing, and removes Random #
+					if(RTest_Result) ;Checks if Reference test passed
+					this.Documentation.Name:=Interface_Name ;Stores Reference Name for later lookup.
+					else
+					throw Exception("Attempting to define Interface name to a reference that does not return the Interface.  Reference: """ Interface_Name """")
+					
 				}
-				else if(isobject(AHK.Lang.Class.Global(Interface_Reference))) { ;Checks if this is a Class Interface
-					ref_type:=1 ;Marks Ref type as Class
-					,RTest_Result:=AHK.Lang.Class.Global(Interface_Reference).RTest_RVerify == this.RTest_RVerify ;Verifies Interface_Reference is the same
-					,Ref:=AHK.Lang.Class.Global.Name(Interface_Reference) ;Gets plain text name of Class
-				}
-				this.RTest:="",this.RTest_RVerify:="" ;Reference Test Complete - Clears Values from memory
-				if(RTest_Result) { ;Checks if reference test was passed
-					this.Interface_Definition.Ref:=Ref ;Marks Interface_Definition with new Reference
-					this.Interface_Definition.Ref_Type:=Ref_Type ;Marks Interface_Definition with new Reference type
-				}
-			}
-			if(this.Interface_Definition.Ref_Type == ""){ ;Checks if reference has a valid value
-				this.Interface_Definition.Ref:="{Reference is Undefined}" ;Marks Interface_Definition reference as undefined
-				this.Interface_Definition.Ref_Type:=""
+				else
+				throw Exception("Attempting to define Interface name with invalid reference. Reference: """ Interface_Name """")
 			}
 		}
 		return RTest_Result
-		
 	}
-	Define_Func(byref Name,byref Description,byref Parameters:=0,byref Params_Byref:="")	{
-		if(this.isNotFinal()){ ;Checks if Interface has not been finalized
-			this.Definition_Validate() ;Ensures Interface has a valid Definition
-			this.Interface_Definition.Func_Desc[Name]:=isobject(Description)?AHK.obj.JSON.Dump(Description):Description
-			this.Interface_Definition.Func_Params[Name]:=Parameters is digit?Parameters:0
-			Params_BR:=!isobject(Params_Byref)?StrSplit(Params_Byref ,"," A_SPace A_Tab):Params_Byref
-			For i,k in Params_BR
-			if k is not digit
-			Params_BR[i]:=""
-			this.Interface_Definition.Func_Params_Byref[Name]:=Params_BR
+	Define_Func(byref Func_Name,byref Func_Desc,byref Param_Count:=0,byref Param_Names:="",byref Byref_param_Indexs:="",byref Local_param_Indexs:="",Byref isVariadic:=0)	{
+		if(this.isNotFinal(1)){ ;Checks if Interface has not been finalized and Function name is valid
+			if(!AHK.lang.Var.isValidName(Func_Name))
+			throw Exception("Attempting to define Interface function with invalid name.`nInvalid Name: " Func_Name,this.Doc_Name())
+			if(Param_Count is not digit)
+			throw Exception("Attempting to define Interface function with invalid Parameter count. '" Func_Name "'",this.Doc_Name())
+			this.Validate() ;Ensures Interface has a valid Definition
+			,Func_Doc:=Array()
+			if(Func_Desc != "")
+				Func_Doc.desc:=func_desc
+			if(Param_Count > 0)	{
+				p_Names:=Array() ;Temp array for Parameter name doc
+				,p_Ref:=Array() ;Array for specifying parameter references
+				Loop, %Param_Count% ;Builds Parameter name doc array with dummy names and puts default value in param reference array
+				p_Names.push("Param" A_Index),p_Ref.push("0")
+				Func_Def:={Param_Cnt:Param_Count,Param_Ref:p_Ref,Variadic:isVariadic?1:0} ;Builds Default Function Definition w/ parameters
+				skip:=0
+				Loop,Parse,Param_Names,CSV ;Parses through Param_Names and replaces dummy names in param doc array
+				{
+					if(A_Index - skip > Param_Count)
+					break
+					if(AHK.lang.Var.isValidName(A_LoopField))
+					p_Names[A_Index - skip]:=A_LoopField
+					else 
+					skip++
+				}
+				Loop,Parse,Local_param_Indexs,CSV ;Parses Local_param_Indexs and ensures they're valid then marks them in function definition
+				if(A_LoopField is digit and A_LoopField <= Param_Count) ;Ensures index is valid
+				Func_Def.Param_Ref[A_LoopField]:=2, Ref_Specified:=1
+				Loop,Parse,Byref_param_Indexs,CSV ;Parses Byref_param_Indexs and ensures they're valid then marks them in param doc array and in function definition
+				if(A_LoopField is digit and A_LoopField <= Param_Count) { ;Ensures index is valid
+					Func_Def.Param_Ref[A_LoopField]:=1, Ref_Specified:=1
+					, P_Names[A_LoopField]:="Byref " P_Names[A_LoopField] ;Marks Parameter Doc Name as byref
+				}
+				if(!Ref_Specified) ;No SPecific parameter references were made so removing from definition
+				Func_Def.Param_Ref:=""
+				if(isVariadic) ;If Function is variadic Mark it in Param Doc Array
+				P_Names[P_Names.MaxIndex()].="*"
+				For i,param in P_Names ;Formats Param name doc array into a string
+				Func_Doc.Param_Names.=i==1?param:" ," param
+			}
+			else
+			Func_Def:=1
+			this.Documentation.Func[Func_Name]:=Func_Doc
+			,this.Definition.Func[Func_Name]:=Func_Def
 		}
 	}
-	Define_Purpose(byref Interface_Purpose)	{
-		if(this.isNotFinal()){ ;Checks if Interface has not been finalized
-			this.Definition_Validate() ;Ensures Interface has a valid Definition
-			this.Interface_Definition.Purpose:=Interface_Purpose
+	Define_Desc(byref Interface_Description)	{
+		if(this.isNotFinal(1)){ ;Checks if Interface has not been finalized
+			this.Validate() ;Ensures Interface has a valid Definition/Documentation
+			,this.Documentation.Desc:=Interface_Description
 		}
 	}
-	Cache_Clear(){
-		this.Cache_Clear_GlobalClass(),	this.Cache_Clear_FuncParam()
-	}
-	Cache_Clear_GlobalClass(){
-		this.C_GlobalClass:=Array()
-	}
-	Cache_Clear_FuncParam(){
-		this.C_FuncParamBR:="",this.C_FuncParam:="",this.C_FuncParam_Usage:=""
-	}
-	Definition_Dump(){
-		return AHK.Obj.JSON.Dump(this.Interface_Definition)
-	}
-	
-	Definition(Display_Msgbox:=1,Function:="",info_type:=0){
-		if(!isobject(this.Cache_Interface_Definition)) ;Checks if Interface Definition has been loaded into memory
-		Original_Loader:=1, this.Cache_Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Marks this function call as original definition loader and Loads Interface_Definition from cache file
-		if(function == ""){
-			
-			
+	Define_Inherit(byref Interface_Name)	{
+		if(this.isNotFinal(1)) { ;Checks if this Interface has not been finalized
+			if(this.isInterface(Interface_Name)) ;Checks if Interface name is interface
+			this.Definition.Inherit:=this.Name_Generate(Interface_Name)
+			else
+			throw Exception("Attempting to Inherit Interface that cannot be found. `nUnable to find: '" Interface_Name "'",this.Doc_Name())  
 		}
-		else
-		{
-			
-			
+	}
+	;Documentation retrieval functions section
+	Doc_Func(byref function_name){
+		return this.Doc_Func_Call(function_name) "`n Description: " this.Doc_Func_desc(function_name)
+	}
+	Doc_Func_desc(byref function_name){
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		Output:=!this.Documentation.func.hasKey(function_name)?"Function not found: " function_name:this.Documentation.func[function_name].haskey("desc")?this.Documentation.func[function_name]desc:"Description for '" function_name "' is undefined."
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		return Output
+	}
+	Doc_Func_Call(byref function_name)	{
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		func_doc:=this.Documentation.func[function_name]
+		output:=this.Documentation.func.hasKey(function_name)?function_name "(" func_doc.Param_Names ")":"Function not found: " function_name
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		return output
+	}
+	Doc_List_Func(){
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		Output:=Array()
+		For func_name,def in this.Documentation.func
+			Output.push(func_name)
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		return Output
+	}
+	Doc_Desc(){
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		output:=this.Documentation.haskey("desc")?this.Documentation.desc:"Interface Documentation is undefined"
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		return output
+	}
+	Doc_Name(){
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		output:=this.Documentation.haskey("name")?this.Documentation.name:"Interface Name is undefined"
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		return output
+	}
+	Doc_Inherit(){
+		AHK.Helpers.Cache_Obj_Lock(this,"Definition",A_thisfunc,this.ID *2) ;Locks Definition
+		output:=this.Definition.Inherit
+		AHK.Helpers.Cache_Obj_Unlock(this,"Definition",A_thisfunc) ;Unlocks Definition
+		return output
+	}
+	Doc(extended:=0){
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		Inherit:=this.Doc_Inherit()
+		Output:="Interface Name: " this.Doc_Name() (Inherit ==""?"":"`nInherits Interface: " this.Doc_Inherit()) "`nInterface Description: " this.Doc_Desc() "`nFunctions: "
+		For i,func_name in this.Doc_List_Func()
+			Output.="`n" this.Doc_Func(func_name)
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		if(extended){
+			inherit_lp_Prevention:={"I" this.ID:1}
+			while(Inherit != "")
+			{
+				Interface:=this.isInterface(Inherit,1)
+				if(!inherit_lp_Prevention.haskey("I" Interface.ID)){
+					inherit_lp_Prevention["I" Interface.ID]:=1
+					Output.="`n*Inherited from " Inherit ":"
+					AHK.Helpers.Cache_Obj_Lock(Interface,"Documentation",A_thisfunc,Interface.ID *2-1) ;Locks Documentation
+					For i,func_name in Interface.Doc_List_Func()
+						Output.="`n" Interface.Doc_Func(func_name)
+					Inherit:=Interface.Doc_Inherit()
+					AHK.Helpers.Cache_Obj_Unlock(Interface,"Documentation",A_thisfunc) ;Unlocks Documentation
+				}
+				else
+					Inherit:=""
+			}
 		}
-		if(Original_Loader) ;Checks if this function call was original Interface_Definition loader
-		this.Cache_Interface_Definition:="" ;Clears Interface_Definition from memory
+		return output
+	}
+	Dump(){
+		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
+		AHK.Helpers.Cache_Obj_Lock(this,"Definition",A_thisfunc,this.ID *2) ;Locks Definition
+		Output:=AHK.Obj.JSON.Dump({Definition:this.Definition,Documentation:this.Documentation})
+		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
+		AHK.Helpers.Cache_Obj_Unlock(this,"Definition",A_thisfunc) ;Unlocks Definition
+		return Output
 	}
 	
 }
 
 
 ; Interface_Definition:=AHK.Helpers.Cache_Load(this,{Description:{},Parameters:{}},this.ID) ;Loads Interface_Definition from cache file
-; AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to cache file				
+; AHK.Helpers.Cache_Save(this,Interface_Definition,this.ID) ;Writes Interface_Definition to cache file																									

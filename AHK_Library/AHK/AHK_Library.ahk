@@ -8,6 +8,7 @@ Class Ahk{
 	#Include %A_Scriptdir%\AHK_Library\AHK\Github.ahk
 	#Include %A_Scriptdir%\AHK_Library\AHK\String.ahk
 	#Include %A_Scriptdir%\AHK_Library\AHK\File\File.ahk
+
 	AutoExecute(){
 		static executed:=0
 		if(!executed){

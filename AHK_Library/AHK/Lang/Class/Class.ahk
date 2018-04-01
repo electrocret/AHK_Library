@@ -12,14 +12,24 @@ Class Class{
 		return 0
 		While(isObject(Obj)){
 			if(isobject(this.Global(Obj)))
-				return 0
+			return 0
 			Obj:=this.Base(Obj)
 		}
 		return 1
 	}
 	Name(byref Obj){
 		clsname:=this.Global.Name(Obj)
-			return instr(clsname,".")?substr(clsname,instr(clsname,".",,0)+1):clsname
+		return instr(clsname,".")?substr(clsname,instr(clsname,".",,0)+1):clsname
+	}
+	Extends(Obj,byref Extended_Class)
+	{
+		Extended_ClsName:=this.Global.Name(Extended_Class)
+		while(isobject(Obj)) {
+			if(this.Global.Name(Obj) == Extended_ClsName)
+			return 1
+			Obj:=this.Base(Obj)
+		}
+		return 0
 	}
 	Class Base extends AHK.Lang.Class.Meta.Call_Functor{
 		Call(byref self, byref Obj){
@@ -49,35 +59,35 @@ Class Class{
 			Return -  Returns Global Class Object
 			Parameters :
 			Obj - Instance Object or class name of the global class object to retrieve
-		*/
-		Call(byref self,byref Obj) {
-			cls:=this.Name(Obj)
-			if(cls != ""){
-				stree:=StrSplit(cls,".")
-				root:=stree.RemoveAt(1)
-				try{
-					root:=%root%	;Gets root object
-					return !isobject(root)?"":stree.length() == 0?root:root[stree*] ;gets SubObject
+			*/
+			Call(byref self,byref Obj) {
+				cls:=this.Name(Obj)
+				if(cls != ""){
+					stree:=StrSplit(cls,".")
+					root:=stree.RemoveAt(1)
+					try{
+						root:=%root%	;Gets root object
+						return !isobject(root)?"":stree.length() == 0?root:root[stree*] ;gets SubObject
+					}
 				}
 			}
-		}
-		Name(byref Obj){
-			return isobject(obj)?obj.__Class:obj
-		}
-		Ascend(byref Obj,Levels:=1){
-			clsname:=this.Name(Obj)
-			return instr(clsname,".")? this.Call("",substr(clsname,1,instr(clsname,".",,-1,Levels)-1)):""
-		}
-		Root(byref Obj){
-			cls:=this.Name(Obj)
-			if(cls != ""){
-				stree:=StrSplit(cls,".")
-				try{
-					root:=% stree[1]	;Gets root object
-					return root
+			Name(byref Obj){
+				return isobject(obj)?obj.__Class:obj
+			}
+			Ascend(byref Obj,Levels:=1){
+				clsname:=this.Name(Obj)
+				return instr(clsname,".")? this.Call("",substr(clsname,1,instr(clsname,".",,-1,Levels)-1)):""
+			}
+			Root(byref Obj){
+				clsname:=this.Name(Obj)
+				if(clsname != ""){
+					stree:=StrSplit(clsname,".")
+					try{
+						root:=% stree[1]	;Gets root object
+						return root
+					}
 				}
 			}
+			
 		}
-		
-	}
-}						
+	}							
