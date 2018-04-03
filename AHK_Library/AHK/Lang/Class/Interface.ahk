@@ -66,14 +66,15 @@
 
 
 Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
-	static RTest:=""
 	__New(Interface_Dump:="")	{
 		this.Validate(Interface_Dump)
 	}
 	Validate(Import_Dump:="") {
-		if(this.isNotFinal(1)){ ;Is Interface Not Final?
-			if(Import_Dump == "")  ;Was Import_Dump not provided?
-				Import_Dump:=this.Documentation == "" and this.Definition == ""?this.Interface_Import:{Documentation:this.Documentation,Definition:this.Definition},this.Interface_Import:=""
+		static testing_import_name:=0
+		if(this.isNotFinal(1) and !testing_import_name){ ;Is Interface Not Final and we're not testing an imported interface name?
+			if(Import_Dump == "") { ;Was Import_Dump not provided?
+				Import_Dump:=this.Documentation == "" and this.Definition == ""?this.Interface_Import:{Documentation:this.Documentation,Definition:this.Definition},this.Interface_Import:="" ;Clears Interface_Import for memory.
+				}
 			if(!isobject(Import_Dump) and Import_Dump != "") ;Was Import_Dump provided but is not an object?
 			Import_Dump:=AHK.Obj.JSON.Load(Import_Dump) ;Try to convert Import_Dump from JSON
 			if(!isobject(Import_Dump.Definition) and Import_Dump.hasKey("Definition")) ;Does Import_Dump have a Definition Value but it's not an object?
@@ -81,8 +82,18 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 			if(!isobject(Import_Dump.Documentation) and Import_Dump.hasKey("Documentation")) ;Does Import_Dump have a Documentation Value but it's not an object?
 			Import_Dump.Documentation:=AHK.Obj.JSON.Load(Import_Dump.Documentation) ;Try converting Import_Dump.Documentation from JSON	
 			If(isobject(Import_Dump.Documentation) and isObject(Import_Dump.Definition) and isobject(Import_Dump.Documentation.Func) and isobject(Import_Dump.Definition.Func) and (this.isInterface(Import_Dump.Definition.Inherit) or Import_Dump.Definition.Inherit == ""))		{ ;Does Import_Dump have everything to be a valid interface definition/documentation?
+				if(This.Documentation.Name == "" and Import_Dump.Documentation.Name != "") ;Does Documentation not have an interface name defined, but Import does?
+				{
+					testing_import_name:=1 ;Enable Testing Import name
+					try 
+					this.Define_Name(Import_Dump.Documentation.Name) ;Try Defining Import name as interface name
+					catch e
+					Import_Dump.Documentation.Name:="" ;Defining Import name as interface name was unsuccessful. 
+					testing_import_name:=0 ;Disable Testing Import name
+				}
+				else
+				Import_Dump.Documentation.Name:=This.Documentation.Name ;Copy over Interface name to Import.
 				this.Definition:=Import_Dump.Definition ;Copies Definition
-				,Import_Dump.Documentation.Name:=this.isInterface(Import_Dump.Documentation.Name)?Import_Dump.Documentation.Name:This.Documentation.Name ;Does Import_Dump have a valid name for the interface? Yes-Use it, No-Keep current Name
 				,this.Documentation:=Import_Dump.Documentation ;Copies Documentation
 			}
 			else	{ ;Invalid Import_Dump so sets Definition/Documentation to default
@@ -94,22 +105,22 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 	isNotFinal(byref throw_error:=0){
 		if(throw_error and AHK.lang.Logic.isType.digit(this.ID) and this.ID != "") 
 		throw Exception("Attempting to alter definition on finalized Interface -" this.ID,this.Doc_Name())
-		return this.RTest == "" and !(AHK.lang.Logic.isType.digit(this.ID) and this.ID != "")
+		return this.Self_Temp_Finalize == "" and !(AHK.lang.Logic.isType.digit(this.ID) and this.ID != "")
 	}
 	
-	isInterface(byref Interface_Reference,byref Mode:=0){
-		if(Interface_Reference != "AHK.Lang.Class.Interface") {
-			if(!isobject(Interface_Reference) and Instr(Interface_Reference,"()") == (StrLen(Interface_Reference) - 1)) ;Checks for Func Interface Name
-			Interface_Type:=2,this.RTest:=1,Interface:=AHK.Lang.Func.Global_Call(Substr(Interface_Reference,1,StrLen(Interface_Reference) - 2)),this.RTest:=""
-			else if(AHK.Lang.Func.isFunc(Interface_Reference) == 1) ;Checks Func Interface Ref
-			Interface_Type:=2,this.RTest:=1,Interface:=AHK.Lang.Func.Global_Call(Interface_Reference),this.RTest:=""
+	isInterface(byref Interface_Name,byref Mode:=0){
+		if(Interface_Name != "AHK.Lang.Class.Interface") {
+			if(!isobject(Interface_Name) and Instr(Interface_Name,"()") == (StrLen(Interface_Name) - 1)) ;Checks for Func Interface Name
+			Interface_Type:=2,this.Self_Temp_Finalize:=1,Interface:=AHK.Lang.Func.Global_Call(Substr(Interface_Name,1,StrLen(Interface_Name) - 2)),this.Self_Temp_Finalize:=""
+			else if(AHK.Lang.Func.isFunc(Interface_Name) == 1) ;Checks Func Interface Ref
+			Interface_Type:=2,this.Self_Temp_Finalize:=1,Interface:=AHK.Lang.Func.Global_Call(Interface_Name),this.Self_Temp_Finalize:=""
 			else	;Checks for Class Interface Ref
-			Interface_Type:=1,Interface:=AHK.Lang.Class.Global(Interface_Reference)
+			Interface_Type:=1,Interface:=AHK.Lang.Class.Global(Interface_Name)
 		}
 		return !isobject(Interface) or !AHK.lang.Class.Extends(Interface,"Ahk.Lang.Class.Interface")?0:Mode?Interface:Interface_Type
 	}
-	Name_Generate(byref Interface_Reference,byref Interface_Type:="")	{
-		return (Interface_Type ?Interface_Type:this.isInterface(Interface_Reference)) == 1?AHK.Lang.Class.Global.Name(Interface_Reference) :Instr(Interface_Reference,"()") == StrLen(Interface_Reference) - 1?Interface_Reference:AHK.Lang.Func.Name(Interface_Reference) "()"
+	Name_Generate(byref Interface_Name,byref Interface_Type:="")	{
+		return (Interface_Type ?Interface_Type:this.isInterface(Interface_Name)) == 1?AHK.Lang.Class.Global.Name(Interface_Name) :Instr(Interface_Name,"()") == StrLen(Interface_Name) - 1?Interface_Name:AHK.Lang.Func.Name(Interface_Name) "()"
 	}
 	Finalize(){
 		static ID_Enumerator:=0
@@ -127,19 +138,19 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 			,this.GlobalClass_Cache:=Array() ;Creates global class cache
 			,this.Documentation:=""
 			if(this.Definition.Cache_Usage == 0)
-				this.Definition:=""
+			this.Definition:=""
 			else
-				this.Definition_CacheLock:=Array()
+			this.Definition_CacheLock:=Array()
 			
 		}
 	}
 	
-	;Interface Implementation testing functions section
+	;### Interface Implementation testing functions section
 	Implement_Test(byref Objs*){
 		static Inherit_lp_check:=Array()
 		Output:=Array() ;Stores Final results
 		if(!Inherit_lp_check.hasKey( "I" this.ID)){ ;Inherit Loop Prevention check
-			this.Finalize()
+			this.Finalize() ;Finalize Interface if it isn't already.
 			,Cache_Names:=Array()
 			,NeedTesting:=Array() ;Temp array for objects whose implementation results aren't cached
 			For i,Obj in Objs
@@ -170,7 +181,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 				PerFunc_Impl_Issues:=Array()
 				For i,Obj in NeedTesting
 				{
-					if(this.GlobalClass_Cache.hasKey(Cache_Names[i])){  ;is Class's Cache friendly name in Cache?
+					if(this.GlobalClass_Cache.hasKey(Cache_Names[i])){  ;is Class's Cache friendly name in Cache? (recheck)
 						if(isobject(this.GlobalClass_Cache[Cache_Names[i]]))
 						Output[i]:=this.GlobalClass_Cache[Cache_Names[i]] ;Gets Cached result for Class
 					}
@@ -197,7 +208,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 							PerFunc_Impl_Issues.push(0) ;Error - Expecting no Parameters
 							if(PerFunc_Impl_Issues.length())	{ ;Was the function not implemented properly?
 								if(!isobject(Func_Impl_Issues[i]))
-									Func_Impl_Issues[i]:=Array()
+								Func_Impl_Issues[i]:=Array()
 								Func_Impl_Issues[i][func_name]:=PerFunc_Impl_Issues ;Marks Function in implementation issues
 								,PerFunc_Impl_Issues:=Array() ;Creates blank PerFunc_Impl_Issues array
 							}
@@ -209,7 +220,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 							Impl_Issues.Class:=AHK.lang.class.isPrototype(Obj)?"{Prototype Object}":AHK.lang.class.Global.Name(Obj)
 						}
 						else
-							Impl_Issues:="" ;Clears Impl_Issues for memory savings
+						Impl_Issues:="" ;Clears Impl_Issues for memory savings
 						if(Cache_Names.hasKey(i)) ;Is there a cache ID?
 						this.GlobalClass_Cache[Cache_Names[i]]:=Impl_Issues ;Caches Implementation issues
 						if(isobject(Impl_Issues))
@@ -250,7 +261,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 				}
 			}
 			if(isobject(Impl_Issue.Inherit)) ;Were there issues with inherited Interface?				
-				msg.=(isobject(Impl_Issue.func)?"`n`n":"`n") this.isInterface(this.Doc_Inherit(),1).Implement_Exception_Msg(Impl_Issue.Inherit,Obj,1)
+			msg.=(isobject(Impl_Issue.func)?"`n`n":"`n") this.isInterface(this.Doc_Inherit(),1).Implement_Exception_Msg(Impl_Issue.Inherit,Obj,1)
 		}
 		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
 		return msg
@@ -295,29 +306,26 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 	
 	
 	;Defining Functions section
-	Define_Name(byref Interface_Reference){
-		if(this.isNotFinal(1)) { ;ensures Interface is not finalized
-			if(AHK.Lang.Class.Global.Name(Interface_Reference) != "AHK.Lang.Class.Interface") { ;Ensures Reference isn't global interface class
-				this.Validate() ;Ensures this Interface has a valid Definition/Documentation
-				Ref_Type:=this.isInterface(Interface_Reference) ;Ensures Interface reference returns an Interface
-				if(Ref_Type)	{
-					Random, ref_verify ;Generates random # to verify Interface_Reference return
-					Interface_Name:=this.Name_Generate(Interface_Reference,Ref_Type)
-					,this.RTest_RVerify:=ref_verify ;Assigns Random # to Interface
-					,this.RTest:=1 ;Enables Reference Testing
-					,RTest_Result:=this.isInterface(Interface_Name,1).RTest_RVerify == this.RTest_RVerify ;Checks if Randomly assigned # is on Referenced Interface
-					,this.RTest:="", this.RTest_RVerify:="" ;Disables Reference Testing, and removes Random #
-					if(RTest_Result) ;Checks if Reference test passed
-					this.Documentation.Name:=Interface_Name ;Stores Reference Name for later lookup.
-					else
-					throw Exception("Attempting to define Interface name to a reference that does not return the Interface.  Reference: """ Interface_Name """")
-					
-				}
+	Define_Name(byref Interface_Name){
+		if(this.isNotFinal(1) and AHK.Lang.Class.Global.Name(Interface_Name) != "AHK.Lang.Class.Interface") { ;is Interface Not finalized, and New name isn't Global interface class?
+			this.Validate() ;Ensures this Interface has a valid Definition/Documentation
+			Ref_Type:=this.isInterface(Interface_Name) ;Ensures Interface reference returns an Interface
+			if(Ref_Type)	{
+				I_Name:=this.Name_Generate(Interface_Name,Ref_Type) ;Generates Interface Name.
+				Random, ref_verify ;Generates random # to verify Interface reference return
+				,this.ref_verify:=ref_verify ;Assigns Random # to Interface
+				,Ref_Result:=this.isInterface(I_Name,1).ref_verify == this.ref_verify ;Checks if Randomly assigned # is on Referenced Interface Name
+				,this.ref_verify:="" ;Removes Random #
+				if(Ref_Result) ;Checks if Reference test passed
+				this.Documentation.Name:=I_Name ;Stores Reference Name for later lookup.
 				else
-				throw Exception("Attempting to define Interface name with invalid reference. Reference: """ Interface_Name """")
+				throw Exception("Attempting to define Interface name to a reference that does not return the Interface.  Reference: """ Interface_Name """")
+				
 			}
+			else
+			throw Exception("Attempting to define Interface name with invalid reference. Reference: """ Interface_Name """")
 		}
-		return RTest_Result
+		return Ref_Result
 	}
 	Define_Func(byref Func_Name,byref Func_Desc,byref Param_Count:=0,byref Param_Names:="",byref Byref_param_Indexs:="",byref Local_param_Indexs:="",Byref isVariadic:=0)	{
 		if(this.isNotFinal(1)){ ;Checks if Interface has not been finalized and Function name is valid
@@ -328,7 +336,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 			this.Validate() ;Ensures Interface has a valid Definition
 			,Func_Doc:=Array()
 			if(Func_Desc != "")
-				Func_Doc.desc:=func_desc
+			Func_Doc.desc:=func_desc
 			if(Param_Count > 0)	{
 				p_Names:=Array() ;Temp array for Parameter name doc
 				,p_Ref:=Array() ;Array for specifying parameter references
@@ -377,7 +385,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 			if(this.isInterface(Interface_Name)) ;Checks if Interface name is interface
 			this.Definition.Inherit:=this.Name_Generate(Interface_Name)
 			else
-			throw Exception("Attempting to Inherit Interface that cannot be found. `nUnable to find: '" Interface_Name "'",this.Doc_Name())  
+			throw Exception("Attempting to Inherit Interface that cannot be found. `nUnable to find: '" this.Name_Generate(Interface_Name) "'",this.Doc_Name())  
 		}
 	}
 	;Documentation retrieval functions section
@@ -386,7 +394,16 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 	}
 	Doc_Func_desc(byref function_name){
 		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
-		Output:=!this.Documentation.func.hasKey(function_name)?"Function not found: " function_name:this.Documentation.func[function_name].haskey("desc")?this.Documentation.func[function_name]desc:"Description for '" function_name "' is undefined."
+		if(this.Documentation.func.hasKey(function_name))
+		{
+			func_def:=this.Documentation.func[function_name]
+			if(func_def.haskey("desc"))
+			Output:=func_def.desc
+			else
+			Output:="Description for '" function_name "' is undefined."
+		}
+		else
+		Output:="Function not found: " function_name
 		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
 		return Output
 	}
@@ -401,7 +418,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 		AHK.Helpers.Cache_Obj_Lock(this,"Documentation",A_thisfunc,this.ID *2-1) ;Locks Documentation
 		Output:=Array()
 		For func_name,def in this.Documentation.func
-			Output.push(func_name)
+		Output.push(func_name)
 		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
 		return Output
 	}
@@ -428,7 +445,7 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 		Inherit:=this.Doc_Inherit()
 		Output:="Interface Name: " this.Doc_Name() (Inherit ==""?"":"`nInherits Interface: " this.Doc_Inherit()) "`nInterface Description: " this.Doc_Desc() "`nFunctions: "
 		For i,func_name in this.Doc_List_Func()
-			Output.="`n" this.Doc_Func(func_name)
+		Output.="`n" this.Doc_Func(func_name)
 		AHK.Helpers.Cache_Obj_Unlock(this,"Documentation",A_thisfunc) ;Unlocks Documentation
 		if(extended){
 			inherit_lp_Prevention:={"I" this.ID:1}
@@ -436,16 +453,17 @@ Class Interface extends AHK.Lang.Class.Meta.Call_Construct {
 			{
 				Interface:=this.isInterface(Inherit,1)
 				if(!inherit_lp_Prevention.haskey("I" Interface.ID)){
+					Interface.Finalize()
 					inherit_lp_Prevention["I" Interface.ID]:=1
 					Output.="`n*Inherited from " Inherit ":"
 					AHK.Helpers.Cache_Obj_Lock(Interface,"Documentation",A_thisfunc,Interface.ID *2-1) ;Locks Documentation
 					For i,func_name in Interface.Doc_List_Func()
-						Output.="`n" Interface.Doc_Func(func_name)
+					Output.="`n" Interface.Doc_Func(func_name)
 					Inherit:=Interface.Doc_Inherit()
 					AHK.Helpers.Cache_Obj_Unlock(Interface,"Documentation",A_thisfunc) ;Unlocks Documentation
 				}
 				else
-					Inherit:=""
+				Inherit:=""
 			}
 		}
 		return output
